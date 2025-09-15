@@ -2,17 +2,16 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from .database_service import get_session
 from ..models.user_kyc_entity import UserKYC
-from ..models.user_kyc import UserKYCIn, UserKYCOut
+from ..models.user_kyc import UserKYCCreate, UserKYCOut
 
 
-def register_user_kyc(data: UserKYCIn) -> UserKYCOut:
+def register_user_kyc(data: UserKYCCreate) -> UserKYCOut:
     """Registra um usuário KYC. Retorna UserKYCOut ou lança ValueError em caso de duplicidade."""
     with get_session() as session:  
         entity = UserKYC(
             wallet_address=data.wallet_address,
             full_name=data.full_name,
             document_id=data.document_id,
-            country=data.country,
             id_photo_ref=data.id_photo_ref,
         )
         session.add(entity)
