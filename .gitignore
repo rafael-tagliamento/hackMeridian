@@ -1,0 +1,10 @@
+# Environment
+
+*/.venv/
+.env
+
+
+
+# OS and IDE
+DS_Store
+.vscode
