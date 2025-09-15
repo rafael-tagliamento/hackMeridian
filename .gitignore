@@ -1,13 +1,18 @@
 # Environment
-
 */.venv/
 .env
-
-
 
 # OS and IDE
 DS_Store
 .vscode
+
+# Rust's output directory
+target
+
+# Local settings
+.soroban
+.stellar
+
 # Flutter/Dart/Pub related
 .dart_tool/
 .packages
