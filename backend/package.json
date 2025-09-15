@@ -1,0 +1,42 @@
+{
+  "name": "vaccination-backend",
+  "version": "1.0.0",
+  "description": "Backend API for vaccination management system - Meridian Hackathon 2025",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src --ext .js",
+    "lint:fix": "eslint src --ext .js --fix"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^6.0.1",
+    "dotenv": "^16.0.3",
+    "mongoose": "^6.9.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0",
+    "express-validator": "^6.14.3",
+    "morgan": "^1.10.0",
+    "compression": "^1.7.4"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20",
+    "jest": "^29.4.0",
+    "supertest": "^6.3.3",
+    "eslint": "^8.34.0",
+    "eslint-config-node": "^4.1.0"
+  },
+  "keywords": [
+    "vaccination",
+    "healthcare",
+    "api",
+    "nodejs",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC"
+}
