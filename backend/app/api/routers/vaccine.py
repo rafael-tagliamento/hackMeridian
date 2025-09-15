@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends
 from ...services import stellar_service
-from ...models import vacination_token
+from ...models import vaccination_token
 
 router = APIRouter()
 
 
-@router.post("/create_token")
-async def create_token(token_data: vacination_token.VaccinationToken):
+@router.post("/create_vaccine")
+async def create_vaccine(token_data: vaccination_token.VaccinationToken):
     """
     Receives vaccination data, validates it, and calls the service to create a token.
     """

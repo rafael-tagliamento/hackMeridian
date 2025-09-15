@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
-from typing import Optional
 import re
 
 WALLET_REGEX = re.compile(r"^G[A-Z2-7]{55}$")  # Stellar public key pattern (56 chars)

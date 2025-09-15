@@ -1,8 +1,9 @@
 from stellar_sdk import Server, Keypair, TransactionBuilder, Network, Asset
 from ..core.config import settings
-from ..models.vacination_token import VaccinationToken
+from ..models.vaccination_token import VaccinationToken
 
-def create_vac_token(token_data: VaccinationToken):
+
+def create_vac_token(token_data: VaccinationToken, destination_key: int):
     """
     Creates and issues a new vaccination token on the Stellar network.
     """
@@ -14,7 +15,7 @@ def create_vac_token(token_data: VaccinationToken):
     destination_keypair = Keypair.random()
 
     # Create a custom asset representing the vaccine
-    vaccine_asset = Asset(token_data.vaccine_name, source_keypair.public_key)
+    vaccine_asset = Asset(token_data.name, source_keypair.public_key)
 
     # Build the transaction
     transaction = (
@@ -26,15 +27,14 @@ def create_vac_token(token_data: VaccinationToken):
         # First, the destination account must trust the asset
         .append_change_trust_op(
             asset=vaccine_asset,
-            source=destination_keypair.public_key # The patient's account trusts the asset
+            source=destination_keypair.public_key,  # The patient's account trusts the asset
         )
         # Then, the issuer sends the token
         .append_payment_op(
             destination=destination_keypair.public_key,
             asset=vaccine_asset,
-            amount="1", # Issue one token representing one dose
-        )
-        .build()
+            amount="1",  # Issue one token representing one dose
+        ).build()
     )
 
     # The issuer and the patient must sign the transaction
