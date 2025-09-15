@@ -11,4 +11,5 @@ dependencies = [
     "stellar-sdk>=13.0.0",
     "ty>=0.0.1a20",
     "uvicorn>=0.35.0",
+    "sqlalchemy>=2.0.35",
 ]
