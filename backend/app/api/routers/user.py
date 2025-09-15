@@ -1,12 +1,12 @@
 from fastapi import APIRouter, HTTPException
-from ..models.user_kyc import UserKYCIn, UserKYCOut
+from ...models.user_kyc import UserKYCCreate, UserKYCOut
 from ...services import user_service
 
 router = APIRouter()
 
 
 @router.post("/users/register", response_model=UserKYCOut)
-async def register_user(data: UserKYCIn):
+async def register_user(data: UserKYCCreate):
     try:
         return user_service.register_user_kyc(data)
     except ValueError as e:
