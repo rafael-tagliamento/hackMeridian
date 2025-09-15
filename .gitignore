@@ -12,3 +12,60 @@ target
 # Local settings
 .soroban
 .stellar
+
+# Flutter/Dart/Pub related
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+flutter_*.png
+generated_plugin_registrant.dart
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android related
+**/android/**/gradle-wrapper.jar
+**/android/.gradle/
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/key.properties
+**/android/.idea/
+**/android/.settings/
+**/android/.project
+**/android/.classpath
+**/android/.cxx/
+
+# iOS/macOS related
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+**/macos/Pods/
+**/macos/.symlinks/
+**/macos/Flutter/ephemeral/
+**/macos/Flutter/GeneratedPluginRegistrant.*
+
+# Xcode related
+**/ios/Runner.xcworkspace/
+**/ios/Runner.xcodeproj/project.xcworkspace/
+**/ios/Runner.xcodeproj/xcuserdata/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.podspec
+
+# IntelliJ related
+*.iml
+.idea/
+*.ipr
+*.iws
