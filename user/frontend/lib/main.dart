@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+
+// IMPORTA O SEU TEMA NOVO
+import 'theme/theme.dart'; // <- ajuste o caminho se estiver em outra pasta (ex.: 'theme/theme.dart')
+
 import 'models/user.dart';
 import 'models/vaccine.dart';
 import 'utils/hash_generator.dart';
@@ -18,7 +22,12 @@ class VaccinationApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.teal),
+
+      // ⬇️ APLICA O TEMA DO ARQUIVO theme.dart
+      theme: ThemeData.light(),          // tema claro
+      darkTheme: ThemeData.dark(),       // tema escuro (se existir)
+      themeMode: ThemeMode.system,    // alterna conforme o sistema (pode trocar para ThemeMode.light/dark)
+
       home: const App(),
     );
   }
@@ -125,8 +134,8 @@ class _AppState extends State<App> {
       name: name, batch: batch, location: location, doctor: doctor,
     );
     final vrf = (user != null)
-      ? 'VRF-${generateHash('$adm-${user!.cpf}-${user!.name}')}'
-      : '';
+        ? 'VRF-${generateHash('$adm-${user!.cpf}-${user!.name}')}'
+        : '';
 
     final v = Vaccine(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
