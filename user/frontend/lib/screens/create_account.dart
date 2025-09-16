@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/user.dart';
 import '../utils/local_doc_selfie_verifier.dart'; // << novo import
@@ -11,7 +11,9 @@ import '../utils/stellar.dart';
 import '../utils/security_service.dart';
 import '../utils/user_storage.dart';
 
-// Criação de uma conta
+/// ---------------------------------------------------------------------------
+/// TELA: Criação de conta em 2 etapas
+/// ---------------------------------------------------------------------------
 class CreateAccount extends StatefulWidget {
   final void Function(User) onCreateAccount;
   const CreateAccount({
@@ -32,7 +34,6 @@ class _CreateAccountState extends State<CreateAccount> {
   final cpf = TextEditingController();
   final birth = TextEditingController();
   final pin = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
 
   // Picked images
   final ImagePicker _picker = ImagePicker();
@@ -41,9 +42,11 @@ class _CreateAccountState extends State<CreateAccount> {
 
   // Security & biometrics
   final _auth = LocalAuthentication();
-  final _secure = const FlutterSecureStorage();
 
   bool _busy = false;
+
+  // Durante desenvolvimento, permite pular verificação por foto.
+  bool _requireImages = false;
 
   StellarKeyManager? _keyManager;
   SecurityService? _security;
@@ -65,7 +68,6 @@ class _CreateAccountState extends State<CreateAccount> {
     cpf.dispose();
     birth.dispose();
     pin.dispose();
-    emailController.dispose();
     super.dispose();
   }
 
@@ -91,8 +93,6 @@ class _CreateAccountState extends State<CreateAccount> {
     if (name.text.trim().isEmpty) errors.add('Nome');
     if (cpf.text.trim().isEmpty) errors.add('CPF');
     if (birth.text.trim().isEmpty) errors.add('Data de Nascimento');
-    final e = emailController.text.trim();
-    if (e.isEmpty) errors.add('Email');
     final p = pin.text.trim();
     if (p.isEmpty || p.length < 4 || p.length > 6) {
       errors.add('PIN (4 a 6 dígitos)');
@@ -151,7 +151,8 @@ class _CreateAccountState extends State<CreateAccount> {
 
   // ---- Finalize: biometric + secure save + device bind + face verify ----
   Future<void> _finishAndCreate() async {
-    if (_docImage == null || _selfieImage == null) {
+    // Durante desenvolvimento: permitir criar conta mesmo sem imagens.
+    if (_requireImages && (_docImage == null || _selfieImage == null)) {
       _showSnack('Envie a foto do documento e a selfie.');
       return;
     }
@@ -179,30 +180,36 @@ class _CreateAccountState extends State<CreateAccount> {
         _showSnack('Autenticação biométrica não confirmada.');
         return;
       }
-      final faceOk = await LocalDocSelfieVerifier.instance.verify(
-        docPath: _docImage!.path,
-        selfiePath: _selfieImage!.path,
-        expectedName: name.text,
-        expectedCpf: cpf.text,
-        expectedBirthDate: birth.text,
-      );
-      if (!faceOk) {
-        _showSnack('Não foi possível confirmar documento vs selfie.');
-        return;
+      bool faceOk = true;
+      if (_requireImages && _docImage != null && _selfieImage != null) {
+        faceOk = await LocalDocSelfieVerifier.instance.verify(
+          docPath: _docImage!.path,
+          selfiePath: _selfieImage!.path,
+          expectedName: name.text,
+          expectedCpf: cpf.text,
+          expectedBirthDate: birth.text,
+        );
+        if (!faceOk) {
+          _showSnack('Não foi possível confirmar documento vs selfie.');
+          return;
+        }
       }
       // Geração carteira + PIN
       final kp = await _keyManager!.loadOrCreate();
+      debugPrint('[CreateAccount] generated keypair public=${kp.accountId}');
       await _security!.setPin(pin.text.trim());
       final stellar = StellarService.forTestNet(_keyManager!);
       await stellar.friendBotIfNeeded();
       _seedShown = kp.secretSeed; // exibir uma vez
       final user = User(
           name: name.text.trim(),
-          cpf: cpf.text.trim(),
           birthDate: birth.text.trim(),
+          cpf: cpf.text.trim(),
           publicKey: kp.accountId);
       await _userStorage.save(user);
+      debugPrint('[CreateAccount] user saved to storage');
       await _security!.markTrusted();
+      debugPrint('[CreateAccount] marked device trusted');
       // Mostra seed em diálogo antes de concluir
       // ignore: use_build_context_synchronously
       await showDialog(
@@ -234,7 +241,9 @@ class _CreateAccountState extends State<CreateAccount> {
       );
       if (!mounted) return;
       widget.onCreateAccount(user); // segue para app já autenticado
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('[CreateAccount] finish error: $e');
+      debugPrint('$st');
       _showSnack('Erro ao concluir: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -336,13 +345,6 @@ class _CreateAccountState extends State<CreateAccount> {
               labelText: 'Data de Nascimento (yyyy-MM-dd)',
             ),
             keyboardType: TextInputType.datetime,
-            textInputAction: TextInputAction.next,
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: emailController,
-            decoration: const InputDecoration(labelText: 'Email'),
-            keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 16),
