@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 
-// IMPORTA O SEU TEMA NOVO
-import 'theme/theme.dart'; // <- ajuste o caminho se estiver em outra pasta (ex.: 'theme/theme.dart')
+// IMPORTA O SEU TEMA NOVO (opcional – use se já tiver configurado)
+import 'theme/theme.dart';
 
 import 'models/user.dart';
 import 'models/vaccine.dart';
 import 'utils/hash_generator.dart';
+
+// Telas
 import 'screens/login_page.dart';
 import 'screens/create_account.dart';
 import 'screens/tab_navigation.dart';
-import 'screens/user_qrcode.dart';
-import 'screens/vaccination_calendar.dart';
-import 'screens/scan_health_center.dart';
+import 'screens/vaccination_calendar.dart';  // ⬅️ ADICIONE ESTE
+// --- Use aliases para evitar conflitos ---
+import 'screens/user_qrcode.dart' as uq;      // ⬅️ MANTENHA SÓ ESTE (com alias)
+import 'screens/scan_health_center.dart' as shc;
 
 void main() => runApp(const VaccinationApp());
 
@@ -23,17 +26,18 @@ class VaccinationApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
 
-      // ⬇️ APLICA O TEMA DO ARQUIVO theme.dart
-      theme: ThemeData.light(),          // tema claro
-      darkTheme: ThemeData.dark(),       // tema escuro (se existir)
-      themeMode: ThemeMode.system,    // alterna conforme o sistema (pode trocar para ThemeMode.light/dark)
+      // ⬇️ aplique seu tema aqui, se tiver
+      theme: ThemeData.light(),
+      darkTheme: ThemeData.dark(),
+      themeMode: ThemeMode.system,
 
       home: const App(),
     );
   }
 }
 
-enum TabType { qrcode, calendar, scanner }
+// ✅ Enum unificado com os rótulos usados na navbar
+enum TabType { qr, calendario, historico, scanner }
 
 class App extends StatefulWidget {
   const App({super.key});
@@ -45,7 +49,10 @@ class App extends StatefulWidget {
 class _AppState extends State<App> {
   bool isLoggedIn = false;
   bool showCreateAccount = false;
-  TabType activeTab = TabType.qrcode;
+
+  // ✅ Começa na aba de QR
+  TabType activeTab = TabType.qr;
+
   User? user;
 
   List<Vaccine> vaccines = [
@@ -115,7 +122,7 @@ class _AppState extends State<App> {
       user = null;
       isLoggedIn = false;
       showCreateAccount = false;
-      activeTab = TabType.qrcode;
+      activeTab = TabType.qr; // ✅ volta pra primeira aba
     });
   }
 
@@ -166,17 +173,23 @@ class _AppState extends State<App> {
       );
     }
 
+    // ✅ escolhe a tela conforme a aba ativa
     Widget body;
     switch (activeTab) {
-      case TabType.qrcode:
-        body = UserQRCode(user: user!);
+      case TabType.qr:
+        body = uq.UserQRCode(user: user!);   // usa o UserQRCode da pasta user_qrcode
         break;
-      case TabType.calendar:
+      case TabType.calendario:
         body = VaccinationCalendar(user: user!, vaccines: vaccines);
         break;
+      case TabType.historico:
+        body = HistoricoPage(vaccines: vaccines);
+        break;
       case TabType.scanner:
-        body = ScanHealthCenter(
-          user: user!, vaccines: vaccines, onAddVaccine: addVaccine,
+        body = shc.ScanHealthCenter(        // usa o ScanHealthCenter da pasta scan_health_center
+          user: user!,
+          vaccines: vaccines,
+          onAddVaccine: addVaccine,
         );
         break;
     }
@@ -188,6 +201,36 @@ class _AppState extends State<App> {
       user: user!,
       vaccines: vaccines,
       child: body,
+    );
+  }
+}
+
+/// Placeholder rápido da página de Histórico.
+/// Troque por sua tela final quando quiser.
+class HistoricoPage extends StatelessWidget {
+  final List<Vaccine> vaccines;
+  const HistoricoPage({super.key, required this.vaccines});
+
+  @override
+  Widget build(BuildContext context) {
+    if (vaccines.isEmpty) {
+      return const Center(
+        child: Text('Sem aplicações registradas.'),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: vaccines.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (_, i) {
+        final v = vaccines[i];
+        return ListTile(
+          leading: const Icon(Icons.history),
+          title: Text(v.name),
+          subtitle: Text('Aplicada em ${v.date} • Lote ${v.batch} • ${v.location}'),
+          trailing: const Icon(Icons.chevron_right),
+        );
+      },
     );
   }
 }

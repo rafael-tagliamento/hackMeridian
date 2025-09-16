@@ -23,18 +23,30 @@ class TabNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Olá, ${user.name.split(' ').first}'),
-        actions: [IconButton(onPressed: onLogout, icon: const Icon(Icons.logout))],
+        actions: [
+          IconButton(
+            onPressed: onLogout,
+            tooltip: 'Sair',
+            icon: const Icon(Icons.logout),
+          ),
+        ],
       ),
-      body: AnimatedSwitcher(duration: const Duration(milliseconds: 200), child: child),
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: child,
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: activeTab.index,
         onDestinationSelected: (i) => onTabChange(TabType.values[i]),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.qr_code), label: 'QR Code'),
           NavigationDestination(icon: Icon(Icons.event), label: 'Calendário'),
+          NavigationDestination(icon: Icon(Icons.history), label: 'Histórico'), // 👈 nova aba
           NavigationDestination(icon: Icon(Icons.add_a_photo), label: 'Scanner'),
         ],
       ),
