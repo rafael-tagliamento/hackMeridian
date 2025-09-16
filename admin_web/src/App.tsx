@@ -1,19 +1,13 @@
 import React, { useState } from 'react';
-import { BlockchainIcon } from './components/blockchain-icon';
 import { QRScanner } from './components/qr-scanner';
-import { WebcamScanner } from './components/WebcamScanner'; 
 import { VaccinationLists, mockVaccines } from './components/vaccination-lists';
 import { MaterialSelect } from './components/material-select';
+import { MaterialNotification } from './components/MaterialNotification';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
-import { Calendar } from './components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from './components/ui/popover';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './components/ui/dialog';
-import { CalendarIcon, Clock, CheckCircle, User, LogOut, Syringe, Link as LinkIcon } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { CheckCircle, User, LogOut, Syringe } from 'lucide-react';
 import { QRCodeData } from './utils/stellar-validation';
 
 
@@ -34,13 +28,22 @@ interface VaccinationRecord {
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("login");
   const [user, setUser] = useState<User | null>(null);
-  const [showQRModal, setShowQRModal] = useState(false);
-  const [lastVaccination, setLastVaccination] =
-    useState<VaccinationRecord | null>(null);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   // Estados do formulário de login
   const [loginForm, setLoginForm] = useState({ login: "", password: "" });
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Estados para notificações
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: 'error' | 'success' | 'info';
+    isVisible: boolean;
+  }>({
+    message: '',
+    type: 'info',
+    isVisible: false
+  });
 
   // Estados do formulário de cadastro
   const [registerForm, setRegisterForm] = useState({
@@ -64,8 +67,6 @@ export default function App() {
   const [scannedData, setScannedData] = useState<QRCodeData | null>(null);
   const [scanError, setScanError] = useState<string>('');
 
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
-
   const clinics = [
     "Clínica Bem-Estar",
     "Centro de Saúde Vida",
@@ -86,43 +87,94 @@ export default function App() {
     "LOTE005-2024",
   ];
 
-  const handleLogin = (e: React.FormEvent) => {
+  const showNotification = (message: string, type: 'error' | 'success' | 'info') => {
+    setNotification({
+      message,
+      type,
+      isVisible: true
+    });
+  };
+
+  const hideNotification = () => {
+    setNotification(prev => ({ ...prev, isVisible: false }));
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulação de login
+    setIsLoading(true);
+    
+    // Simula um delay de autenticação para melhor UX
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Validação para permitir apenas o usuário "maria123"
+    if (loginForm.login !== "maria123") {
+      showNotification("Dados não conferem. Verifique suas credenciais.", "error");
+      setIsLoading(false);
+      return;
+    }
+    
+    // Login bem-sucedido para maria123
     setUser({
-      name: "Dr. Maria Silva",
+      name: "Maria Silva",
       cpf: "123.456.789-00",
       clinic: "Clínica Bem-Estar",
     });
-    setCurrentScreen("scanner");
+    showNotification("Login realizado com sucesso! Bem-vinda, Maria.", "success");
+    setTimeout(() => {
+      setCurrentScreen("scanner");
+    }, 1500);
+    setIsLoading(false);
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    
     if (registerForm.password !== registerForm.confirmPassword) {
-      alert("Senhas não conferem!");
+      showNotification("As senhas não conferem. Verifique e tente novamente.", "error");
+      setIsLoading(false);
       return;
     }
+    
+    // Simula processamento
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
     setRegistrationSuccess(true);
+    showNotification("Cadastro realizado com sucesso! Aguarde aprovação.", "success");
+    setIsLoading(false);
   };
 
   const handleVaccination = (e: React.FormEvent) => {
     e.preventDefault();
-    const record: VaccinationRecord = {
-      date: vaccinationForm.date,
-      patientName: vaccinationForm.patientName,
-      vaccine: vaccinationForm.vaccine,
-    };
-    setLastVaccination(record);
-    setShowQRModal(true);
+    
+    // TODO: Implementar integração com backend para confirmar a vacina
+    // Dados que serão enviados:
+    // - scannedData (dados do paciente)
+    // - vaccinationForm.vaccine
+    // - vaccinationForm.lot
+    
+    showNotification("Vacina confirmada com sucesso!", "success");
+    
+    // Reset form and return to scanner
+    setTimeout(() => {
+      setCurrentScreen("scanner");
+      setScannedData(null);
+      setScanError('');
+      setVaccinationForm({
+        date: new Date(),
+        patientName: "",
+        vaccine: "",
+        lot: "",
+      });
+    }, 2000);
   };
 
   const handleScanSuccess = (data: QRCodeData) => {
     setScannedData(data);
     setVaccinationForm((prev) => ({
       ...prev,
-      patientName: data.patientName,
-      date: data.date,
+      patientName: data.name,
+      date: new Date(),
       vaccine: "",
       lot: "",
     }));
@@ -148,90 +200,113 @@ export default function App() {
     });
   };
 
-  const qrCodeData = "Meridian2025";
-
-  const QrCode = () => {
-    return (
-      <div
-        style={{
-          padding: "16px",
-          backgroundColor: "#fff",
-          justifyContent: "center",
-          display: "flex",
-        }}
-      >
-        <QRCodeSVG
-          value={qrCodeData}
-          size={200}
-          bgColor="#ffffff"
-          fgColor="#000000"
-          level="H" // Nível de correção de erro (L, M, Q, H)
-        />
-      </div>
-    );
-  };
-
   // Tela de Login
   if (currentScreen === "login") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <img src="./src/assets/logoroxo.png" alt="Logo" style={{ width: '100px', height: '100px' }} />
+      <>
+        <div className="min-h-screen gradient-bg flex items-center justify-center p-4 page-transition">
+          <div className="material-card w-full max-w-md backdrop-blur-sm bg-white/90">
+            <div className="p-8">
+              <div className="text-center mb-8">
+                <div className="flex justify-center mb-6">
+                  <img 
+                    src="./src/assets/logoroxo.png" 
+                    alt="Logo" 
+                    className="logo-animation"
+                    style={{ width: '80px', height: '80px' }}
+                  />
+                </div>
+                <h1 className="md-headline-small" style={{ color: 'var(--md-primary)' }}>
+                  Bem-vinda ao Sistema
+                </h1>
+                <p className="md-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
+                  Portal do Aplicador de Vacinas
+                </p>
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-6">
+                <div className="space-y-2">
+                  <label htmlFor="login" className="material-label">
+                    Nome de usuário
+                  </label>
+                  <input
+                    id="login"
+                    type="text"
+                    value={loginForm.login}
+                    onChange={(e) =>
+                      setLoginForm((prev) => ({ ...prev, login: e.target.value }))
+                    }
+                    className="material-input w-full"
+                    placeholder="Digite seu usuário"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="password" className="material-label">
+                    Senha
+                  </label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={loginForm.password}
+                    onChange={(e) =>
+                      setLoginForm((prev) => ({
+                        ...prev,
+                        password: e.target.value,
+                      }))
+                    }
+                    className="material-input w-full"
+                    placeholder="Digite sua senha"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="material-button ripple w-full py-4 flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="loading-spinner"></div>
+                      Entrando...
+                    </>
+                  ) : (
+                    <>
+                      <User size={18} />
+                      Entrar
+                    </>
+                  )}
+                </button>
+              </form>
+
+              <div className="text-center mt-6">
+                <p className="md-body-small" style={{ color: 'var(--md-on-surface-variant)' }}>
+                  Não tem uma conta?{" "}
+                  <button
+                    onClick={() => setCurrentScreen("register")}
+                    className="font-medium hover:underline transition-all duration-200"
+                    style={{ color: 'var(--md-primary)' }}
+                    disabled={isLoading}
+                  >
+                    Cadastre-se aqui
+                  </button>
+                </p>
+              </div>
             </div>
-            <CardTitle>Login do Aplicador</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <Label htmlFor="login">Login</Label>
-                <Input
-                  id="login"
-                  type="text"
-                  value={loginForm.login}
-                  onChange={(e) =>
-                    setLoginForm((prev) => ({ ...prev, login: e.target.value }))
-                  }
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={loginForm.password}
-                  onChange={(e) =>
-                    setLoginForm((prev) => ({
-                      ...prev,
-                      password: e.target.value,
-                    }))
-                  }
-                  required
-                />
-              </div>
-              <Button
-                type="submit"
-                className="w-full"
-                style={{ backgroundColor: "#B589FF", borderColor: "#B589FF" }}
-              >
-                Entrar
-              </Button>
-            </form>
-            <p className="text-center mt-4 text-sm">
-              Não tem uma conta?{" "}
-              <button
-                onClick={() => setCurrentScreen("register")}
-                className="hover:underline cursor-pointer"
-                style={{ color: "#B589FF" }}
-              >
-                Cadastre-se
-              </button>
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
+
+        <MaterialNotification
+          message={notification.message}
+          type={notification.type}
+          isVisible={notification.isVisible}
+          onClose={hideNotification}
+        />
+      </>
     );
   }
 
@@ -239,22 +314,22 @@ export default function App() {
   if (currentScreen === "register") {
     if (registrationSuccess) {
       return (
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <Card className="w-full max-w-md">
-            <CardContent
-              className="p-8 text-center"
-              style={{ backgroundColor: "#C89DFF" }}
-            >
-              <div className="flex justify-center mb-4">
-                <Clock size={48} style={{ color: "#B589FF" }} />
+        <div className="min-h-screen gradient-bg flex items-center justify-center p-4 page-transition">
+          <div className="material-card w-full max-w-md success-state backdrop-blur-sm">
+            <div className="p-8 text-center">
+              <div className="flex justify-center mb-6">
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                  <CheckCircle size={32} style={{ color: 'var(--md-success)' }} />
+                </div>
               </div>
-              <h2 className="mb-4">Cadastro realizado com sucesso!</h2>
-              <p className="text-sm text-muted-foreground mb-6">
-                Sua conta está pendente de aprovação. Você será notificado
-                quando o sistema confirmar seu vínculo com a clínica
-                selecionada.
+              <h2 className="md-headline-small mb-4" style={{ color: 'var(--md-on-success-container)' }}>
+                Cadastro Realizado!
+              </h2>
+              <p className="md-body-medium mb-6" style={{ color: 'var(--md-on-success-container)' }}>
+                Sua conta foi criada com sucesso. Aguarde a aprovação do administrador 
+                para confirmar seu vínculo com a clínica selecionada.
               </p>
-              <Button
+              <button
                 onClick={() => {
                   setCurrentScreen("login");
                   setRegistrationSuccess(false);
@@ -267,29 +342,46 @@ export default function App() {
                     clinic: "",
                   });
                 }}
-                style={{ backgroundColor: "#B589FF", borderColor: "#B589FF" }}
+                className="material-button ripple w-full py-3"
               >
+                <User size={18} />
                 Voltar ao Login
-              </Button>
-            </CardContent>
-          </Card>
+              </button>
+            </div>
+          </div>
         </div>
       );
     }
 
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Cadastro de Novo Aplicador</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div className="space-y-4">
-                <h3 className="text-lg">Acesso</h3>
-                <div>
-                  <Label htmlFor="register-login">Login</Label>
-                  <Input
+      <div className="min-h-screen gradient-bg flex items-center justify-center p-4 page-transition">
+        <div className="material-card w-full max-w-lg backdrop-blur-sm bg-white/90">
+          <div className="p-8">
+            <div className="text-center mb-8">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
+                  <User size={32} style={{ color: 'var(--md-primary)' }} />
+                </div>
+              </div>
+              <h1 className="md-headline-small" style={{ color: 'var(--md-primary)' }}>
+                Novo Aplicador
+              </h1>
+              <p className="md-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
+                Crie sua conta para acessar o sistema
+              </p>
+            </div>
+
+            <form onSubmit={handleRegister} className="space-y-6">
+              <div className="space-y-6">
+                <h3 className="md-title-medium" style={{ color: 'var(--md-primary)' }}>
+                  Dados de Acesso
+                </h3>
+                
+                <div className="space-y-2">
+                  <label htmlFor="register-login" className="material-label">
+                    Nome de usuário
+                  </label>
+                  <input
                     id="register-login"
                     type="text"
                     value={registerForm.login}
@@ -299,46 +391,65 @@ export default function App() {
                         login: e.target.value,
                       }))
                     }
+                    className="material-input w-full"
+                    placeholder="Digite um nome de usuário"
                     required
                   />
                 </div>
-                <div>
-                  <Label htmlFor="register-password">Criar Senha</Label>
-                  <Input
-                    id="register-password"
-                    type="password"
-                    value={registerForm.password}
-                    onChange={(e) =>
-                      setRegisterForm((prev) => ({
-                        ...prev,
-                        password: e.target.value,
-                      }))
-                    }
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="confirm-password">Confirmar Senha</Label>
-                  <Input
-                    id="confirm-password"
-                    type="password"
-                    value={registerForm.confirmPassword}
-                    onChange={(e) =>
-                      setRegisterForm((prev) => ({
-                        ...prev,
-                        confirmPassword: e.target.value,
-                      }))
-                    }
-                    required
-                  />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="register-password" className="material-label">
+                      Senha
+                    </label>
+                    <input
+                      id="register-password"
+                      type="password"
+                      value={registerForm.password}
+                      onChange={(e) =>
+                        setRegisterForm((prev) => ({
+                          ...prev,
+                          password: e.target.value,
+                        }))
+                      }
+                      className="material-input w-full"
+                      placeholder="Crie uma senha"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="confirm-password" className="material-label">
+                      Confirmar senha
+                    </label>
+                    <input
+                      id="confirm-password"
+                      type="password"
+                      value={registerForm.confirmPassword}
+                      onChange={(e) =>
+                        setRegisterForm((prev) => ({
+                          ...prev,
+                          confirmPassword: e.target.value,
+                        }))
+                      }
+                      className="material-input w-full"
+                      placeholder="Repita a senha"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-lg">Informações Pessoais</h3>
-                <div>
-                  <Label htmlFor="name">Nome Completo</Label>
-                  <Input
+              <div className="space-y-6">
+                <h3 className="md-title-medium" style={{ color: 'var(--md-primary)' }}>
+                  Informações Pessoais
+                </h3>
+                
+                <div className="space-y-2">
+                  <label htmlFor="name" className="material-label">
+                    Nome completo
+                  </label>
+                  <input
                     id="name"
                     type="text"
                     value={registerForm.name}
@@ -348,75 +459,93 @@ export default function App() {
                         name: e.target.value,
                       }))
                     }
+                    className="material-input w-full"
+                    placeholder="Digite seu nome completo"
                     required
                   />
                 </div>
-                <div>
-                  <Label htmlFor="cpf">CPF</Label>
-                  <Input
-                    id="cpf"
-                    type="text"
-                    placeholder="000.000.000-00"
-                    value={registerForm.cpf}
-                    onChange={(e) =>
-                      setRegisterForm((prev) => ({
-                        ...prev,
-                        cpf: e.target.value,
-                      }))
-                    }
-                    required
-                  />
-                </div>
-              </div>
 
-              <div className="space-y-4">
-                <h3 className="text-lg">Vínculo Profissional</h3>
-                <div>
-                  <Label htmlFor="clinic">
-                    Selecione a clínica onde trabalha
-                  </Label>
-                    <Select
-                    value={registerForm.clinic}
-                    onValueChange={(value: string) =>
-                      setRegisterForm((prev) => ({ ...prev, clinic: value }))
-                    }
-                    required
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="cpf" className="material-label">
+                      CPF
+                    </label>
+                    <input
+                      id="cpf"
+                      type="text"
+                      placeholder="000.000.000-00"
+                      value={registerForm.cpf}
+                      onChange={(e) =>
+                        setRegisterForm((prev) => ({
+                          ...prev,
+                          cpf: e.target.value,
+                        }))
+                      }
+                      className="material-input w-full"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="material-label">
+                      Clínica
+                    </label>
+                    <select
+                      value={registerForm.clinic}
+                      onChange={(e) =>
+                        setRegisterForm((prev) => ({
+                          ...prev,
+                          clinic: e.target.value,
+                        }))
+                      }
+                      className="material-input w-full"
+                      required
                     >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma clínica" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clinics.map((clinic: string) => (
-                      <SelectItem key={clinic} value={clinic}>
-                        {clinic}
-                      </SelectItem>
+                      <option value="">Selecione uma clínica</option>
+                      {clinics.map((clinic) => (
+                        <option key={clinic} value={clinic}>
+                          {clinic}
+                        </option>
                       ))}
-                    </SelectContent>
-                    </Select>
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              <Button
-                type="submit"
-                className="w-full"
-                style={{ backgroundColor: "#B589FF", borderColor: "#B589FF" }}
-              >
-                Finalizar Cadastro
-              </Button>
+              <div className="flex gap-4 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setCurrentScreen("login")}
+                  className="flex-1 py-3 px-6 rounded-full border-2 transition-all duration-200 hover:bg-gray-50"
+                  style={{ 
+                    borderColor: 'var(--md-outline)',
+                    color: 'var(--md-on-surface-variant)'
+                  }}
+                >
+                  Cancelar
+                </button>
+                
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="material-button ripple flex-1 py-3"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="loading-spinner"></div>
+                      Cadastrando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={18} />
+                      Cadastrar
+                    </>
+                  )}
+                </button>
+              </div>
             </form>
-
-            <p className="text-center mt-4 text-sm">
-              Já tem uma conta?{" "}
-              <button
-                onClick={() => setCurrentScreen("login")}
-                className="hover:underline cursor-pointer"
-                style={{ color: "#B589FF" }}
-              >
-                Fazer login
-              </button>
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }
@@ -517,13 +646,6 @@ export default function App() {
           {currentScreen === "scanner" && (
             <div>
               <h1 className="mb-6">Scanner de QR Code do Paciente</h1>
-              {scanError && (
-                <Card className="mb-4" style={{ backgroundColor: '#FEE2E2', borderColor: '#EF4444' }}>
-                  <CardContent className="p-4">
-                    <p className="text-red-600">{scanError}</p>
-                  </CardContent>
-                </Card>
-              )}
               <QRScanner onScanSuccess={handleScanSuccess} onValidationError={handleScanError} />
             </div>
           )}
@@ -610,58 +732,13 @@ export default function App() {
                         borderColor: "#B589FF",
                       }}
                     >
-                      Gerar QR Code de Atestado
+                      Confirmar vacina
                     </Button>
                   </form>
                 </CardContent>
               </Card>
             </div>
           )}
-
-          {/* Modal do QR Code */}
-          <Dialog open={showQRModal} onOpenChange={setShowQRModal}>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle className="text-center">
-                  Atestado Gerado com Sucesso!
-                </DialogTitle>
-              </DialogHeader>
-              <div className="text-center space-y-4">
-                <div className="center">
-                  {" "}
-                  <QrCode />
-                </div>
-
-                <div className="flex items-start gap-3 text-sm text-left">
-                  <BlockchainIcon className="mt-1 flex-shrink-0" size={20} />
-                  <p>
-                    O paciente deve escanear o QR Code acima para assinar o
-                    atestado digital na plataforma individual e da instituição
-                    de saúde.
-                  </p>
-                </div>
-
-                <Button
-                  onClick={() => {
-                    setShowQRModal(false);
-                    setCurrentScreen("scanner");
-                    setScannedData(null);
-                    setScanError('');
-                    setVaccinationForm({
-                      date: new Date(),
-                      patientName: "",
-                      vaccine: "",
-                      lot: "",
-                    });
-                  }}
-                  className="w-full"
-                  style={{ backgroundColor: "#B589FF", borderColor: "#B589FF" }}
-                >
-                  Escanear Novo Paciente
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
         </div>
       </div>
     );
