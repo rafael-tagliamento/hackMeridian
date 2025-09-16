@@ -229,7 +229,7 @@ export default function App() {
               <div className="text-center mb-8">
                 <div className="flex justify-center mb-6">
                   <img
-                    src="./src/assets/logoroxo.png"
+                    src={logoImage}
                     alt="Logo"
                     className="logo-animation"
                     style={{ width: "80px", height: "80px" }}
