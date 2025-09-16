@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { SyringeIcon } from './components/syringe-icon';
 import { BlockchainIcon } from './components/blockchain-icon';
+import { QRScanner } from './components/qr-scanner';
+import { VaccinationLists } from './components/vaccination-lists';
+import { MaterialSelect } from './components/material-select';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
@@ -13,7 +16,7 @@ import { CalendarIcon, Clock, CheckCircle, User, LogOut, Syringe, Link as LinkIc
 import { QRCodeSVG } from 'qrcode.react';
 
 
-type Screen = 'login' | 'register' | 'dashboard' | 'profile' | 'vaccination' | 'success';
+type Screen = 'login' | 'register' | 'dashboard' | 'profile' | 'scanner' | 'vaccination' | 'success';
 
 interface User {
   name: string;
@@ -51,8 +54,15 @@ export default function App() {
   const [vaccinationForm, setVaccinationForm] = useState({
     date: new Date(),
     patientName: '',
-    vaccine: ''
+    vaccine: '',
+    lot: ''
   });
+
+  // Estado para dados escaneados do QR
+  const [scannedData, setScannedData] = useState<{
+    patientName: string;
+    date: Date;
+  } | null>(null);
 
   const [datePickerOpen, setDatePickerOpen] = useState(false);
 
@@ -75,6 +85,14 @@ export default function App() {
     'Pneumocócica'
   ];
 
+  const vaccineLots = [
+    'LOTE001-2024',
+    'LOTE002-2024',
+    'LOTE003-2024',
+    'LOTE004-2024',
+    'LOTE005-2024'
+  ];
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     // Simulação de login
@@ -83,7 +101,7 @@ export default function App() {
       cpf: '123.456.789-00',
       clinic: 'Clínica Bem-Estar'
     });
-    setCurrentScreen('vaccination');
+    setCurrentScreen('scanner');
   };
 
   const handleRegister = (e: React.FormEvent) => {
@@ -106,10 +124,29 @@ export default function App() {
     setShowQRModal(true);
   };
 
+  const handleScanSuccess = (data: { patientName: string; date: Date }) => {
+    setScannedData(data);
+    setVaccinationForm(prev => ({
+      ...prev,
+      patientName: data.patientName,
+      date: data.date,
+      vaccine: '',
+      lot: ''
+    }));
+    setCurrentScreen('vaccination');
+  };
+
   const handleLogout = () => {
     setUser(null);
     setCurrentScreen('login');
     setLoginForm({ login: '', password: '' });
+    setScannedData(null);
+    setVaccinationForm({
+      date: new Date(),
+      patientName: '',
+      vaccine: '',
+      lot: ''
+    });
   };
 
   const qrCodeData = "Meridian2025"
@@ -332,47 +369,62 @@ export default function App() {
   if (user) {
     return (
       <div className="min-h-screen flex">
-        {/* Sidebar */}
-        <div className="w-64 p-6" style={{ backgroundColor: '#C89DFF' }}>
-          <div className="flex items-center gap-2 mb-8">
-            <SyringeIcon size={32} />
-            <h1>VaxChain</h1>
+        {/* Sidebar - aparece no hover */}
+        <div className="group relative">
+          {/* Área de hover invisível */}
+          <div className="w-4 h-full absolute left-0 top-0 z-20"></div>
+          
+          {/* Sidebar */}
+          <div 
+            className="fixed left-0 top-0 h-full w-64 p-6 transform -translate-x-56 group-hover:translate-x-0 transition-transform duration-300 ease-in-out z-30 shadow-lg"
+            style={{ backgroundColor: '#C89DFF' }}
+          >
+            <div className="flex items-center gap-2 mb-8">
+              <SyringeIcon size={32} />
+              <h1>VaxChain</h1>
+            </div>
+            
+            <nav className="space-y-2">
+              <Button
+                variant={currentScreen === 'scanner' ? 'default' : 'ghost'}
+                className="w-full justify-start"
+                onClick={() => setCurrentScreen('scanner')}
+              >
+                <Syringe className="mr-2 h-4 w-4" />
+                Scanner QR Code
+              </Button>
+              
+              <Button
+                variant={currentScreen === 'profile' ? 'default' : 'ghost'}
+                className="w-full justify-start"
+                onClick={() => setCurrentScreen('profile')}
+              >
+                <User className="mr-2 h-4 w-4" />
+                Minhas Informações
+              </Button>
+            </nav>
+
+            <div className="mt-8 pt-8 border-t border-sidebar-border">
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-destructive hover:text-destructive"
+                onClick={handleLogout}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sair
+              </Button>
+            </div>
           </div>
           
-          <nav className="space-y-2">
-            <Button
-              variant={currentScreen === 'vaccination' ? 'default' : 'ghost'}
-              className="w-full justify-start"
-              onClick={() => setCurrentScreen('vaccination')}
-            >
-              <Syringe className="mr-2 h-4 w-4" />
-              Registrar Vacinação
-            </Button>
-            
-            <Button
-              variant={currentScreen === 'profile' ? 'default' : 'ghost'}
-              className="w-full justify-start"
-              onClick={() => setCurrentScreen('profile')}
-            >
-              <User className="mr-2 h-4 w-4" />
-              Minhas Informações
-            </Button>
-          </nav>
-
-          <div className="mt-8 pt-8 border-t border-sidebar-border">
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-destructive hover:text-destructive"
-              onClick={handleLogout}
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sair
-            </Button>
-          </div>
+          {/* Indicador visual da sidebar */}
+          <div 
+            className="fixed left-0 top-1/2 transform -translate-y-1/2 w-2 h-20 rounded-r-full opacity-50 group-hover:opacity-100 transition-opacity duration-300"
+            style={{ backgroundColor: '#C89DFF' }}
+          ></div>
         </div>
 
         {/* Conteúdo principal */}
-        <div className="flex-1 p-8">
+        <div className="flex-1 p-8 ml-4">
           {currentScreen === 'dashboard' && (
             <div>
               <h1>Olá, {user.name}!</h1>
@@ -406,76 +458,68 @@ export default function App() {
             </div>
           )}
 
+          {currentScreen === 'scanner' && (
+            <div>
+              <h1 className="mb-6">Scanner de QR Code do Paciente</h1>
+              <QRScanner onScanSuccess={handleScanSuccess} />
+            </div>
+          )}
+
           {currentScreen === 'vaccination' && (
             <div>
               <h1 className="mb-6">Registro de Vacinação</h1>
-              <Card className="max-w-md">
+              
+              {/* Informações do paciente escaneado */}
+              {scannedData && (
+                <Card className="mb-6" style={{ backgroundColor: '#FEF2FA', borderColor: '#C89DFF' }}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle className="h-5 w-5" style={{ color: '#B589FF' }} />
+                      <h3>Dados do Paciente (QR Code Escaneado)</h3>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <Label>Nome do Paciente</Label>
+                        <p>{scannedData.patientName}</p>
+                      </div>
+                      <div>
+                        <Label>Data de Aplicação</Label>
+                        <p>{scannedData.date.toLocaleDateString('pt-BR')}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Histórico de Vacinação */}
+              <div className="mb-6">
+                <h2 className="mb-4">Histórico de Vacinação do Paciente</h2>
+                <VaccinationLists />
+              </div>
+
+              {/* Formulário de registro */}
+              <Card className="max-w-lg">
                 <CardContent className="p-6">
-                  <form onSubmit={handleVaccination} className="space-y-4">
-                    <div>
-                      <Label htmlFor="vaccination-date">Data da Aplicação</Label>
-                      <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start text-left"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {vaccinationForm.date.toLocaleDateString('pt-BR', {
-                              day: '2-digit',
-                              month: 'long',
-                              year: 'numeric'
-                            })}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={vaccinationForm.date}
-                            onSelect={(date) => {
-                              if (date) {
-                                setVaccinationForm(prev => ({ ...prev, date }));
-                                setDatePickerOpen(false);
-                              }
-                            }}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
+                  <form onSubmit={handleVaccination} className="space-y-6">
+                    <MaterialSelect
+                      label="Vacina Aplicada"
+                      placeholder="Selecione a vacina"
+                      value={vaccinationForm.vaccine}
+                      onValueChange={(value) => setVaccinationForm(prev => ({ ...prev, vaccine: value }))}
+                      options={vaccines.map(vaccine => ({ value: vaccine, label: vaccine }))}
+                      required
+                    />
 
-                    <div>
-                      <Label htmlFor="patient-name">Nome Completo do Paciente</Label>
-                      <Input
-                        id="patient-name"
-                        type="text"
-                        value={vaccinationForm.patientName}
-                        onChange={(e) => setVaccinationForm(prev => ({ ...prev, patientName: e.target.value }))}
-                        required
-                      />
-                    </div>
+                    <MaterialSelect
+                      label="Lote da Vacina"
+                      placeholder="Selecione o lote"
+                      value={vaccinationForm.lot}
+                      onValueChange={(value) => setVaccinationForm(prev => ({ ...prev, lot: value }))}
+                      options={vaccineLots.map(lot => ({ value: lot, label: lot }))}
+                      required
+                    />
 
-                    <div>
-                      <Label htmlFor="vaccine">Vacina Aplicada</Label>
-                      <Select
-                        value={vaccinationForm.vaccine}
-                        onValueChange={(value) => setVaccinationForm(prev => ({ ...prev, vaccine: value }))}
-                        required
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a vacina" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {vaccines.map((vaccine) => (
-                            <SelectItem key={vaccine} value={vaccine}>
-                              {vaccine}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <Button type="submit" className="w-full" style={{ backgroundColor: '#B589FF', borderColor: '#B589FF' }}>
+                    <Button type="submit" className="w-full mt-6" style={{ backgroundColor: '#B589FF', borderColor: '#B589FF' }}>
                       Gerar QR Code de Atestado
                     </Button>
                   </form>
@@ -504,16 +548,19 @@ export default function App() {
                 <Button
                   onClick={() => {
                     setShowQRModal(false);
+                    setCurrentScreen('scanner');
+                    setScannedData(null);
                     setVaccinationForm({
                       date: new Date(),
                       patientName: '',
-                      vaccine: ''
+                      vaccine: '',
+                      lot: ''
                     });
                   }}
                   className="w-full"
                   style={{ backgroundColor: '#B589FF', borderColor: '#B589FF' }}
                 >
-                  Registrar Nova Vacina
+                  Escanear Novo Paciente
                 </Button>
               </div>
             </DialogContent>
