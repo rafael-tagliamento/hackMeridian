@@ -4,6 +4,7 @@
   import path from 'path';
 
   export default defineConfig({
+    base: "/hackMeridian/",
     plugins: [react()],
     define: {
       global: 'globalThis',
