@@ -43,9 +43,9 @@ VaccineStatus getVaccineStatus(Vaccine vaccine) {
 VaccineAlert? createVaccineAlert(Vaccine vaccine) {
   final status = getVaccineStatus(vaccine);
   final int daysUntilDue =
-      (vaccine.nextDose == null || vaccine.nextDose!.trim().isEmpty)
-          ? 0
-          : getDaysDifference(vaccine.nextDose!);
+  (vaccine.nextDose == null || vaccine.nextDose!.trim().isEmpty)
+      ? 0
+      : getDaysDifference(vaccine.nextDose!);
 
   String message = '';
   AlertPriority priority = AlertPriority.low;
@@ -53,23 +53,23 @@ VaccineAlert? createVaccineAlert(Vaccine vaccine) {
   switch (status) {
     case VaccineStatus.overdue:
       final daysOverdue = daysUntilDue.abs();
-      message = 'Vacina em atraso há $daysOverdue dia${daysOverdue != 1 ? 's' : ''}';
+      message = 'Vaccine overdue by $daysOverdue day${daysOverdue != 1 ? 's' : ''}';
       priority = AlertPriority.high;
       break;
     case VaccineStatus.dueSoon:
       if (daysUntilDue == 0) {
-        message = 'Vacina deve ser aplicada hoje';
+        message = 'Vaccine should be administered today';
         priority = AlertPriority.high;
       } else if (daysUntilDue == 1) {
-        message = 'Vacina deve ser aplicada amanhã';
+        message = 'Vaccine should be administered tomorrow';
         priority = AlertPriority.high;
       } else {
-        message = 'Vacina deve ser aplicada em $daysUntilDue dias';
+        message = 'Vaccine should be administered in $daysUntilDue days';
         priority = AlertPriority.medium;
       }
       break;
     case VaccineStatus.upcoming:
-      message = 'Próxima dose em $daysUntilDue dias';
+      message = 'Next dose in $daysUntilDue days';
       priority = AlertPriority.low;
       break;
     case VaccineStatus.upToDate:

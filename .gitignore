@@ -2,12 +2,21 @@
 */.venv/
 .env
 
+node_modules/
+
+admin_web/node_modules
+
 # OS and IDE
 DS_Store
 .vscode
 
+admin_web/node_modules
+
 # Rust's output directory
 target
+
+# Python
+*cpython*
 
 # Local settings
 .soroban

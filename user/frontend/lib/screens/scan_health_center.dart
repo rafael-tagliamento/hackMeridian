@@ -1,97 +1,238 @@
+// lib/screens/scan_health_center.dart
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../models/user.dart';
-import '../models/vaccine.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import '../services/stellar_crypto.dart';
+import '../utils/stellar.dart';
 
-class ScanHealthCenter extends StatefulWidget {
-  final User user;
-  final List<Vaccine> vaccines;
-  final void Function({
-    required String name,
-    required String date,
-    String? nextDose,
-    required String batch,
-    required String location,
-    required String doctor,
-  }) onAddVaccine;
+/// Generic QR scanner that validates Stellar signatures in the payload.
+class ScanQRCode extends StatefulWidget {
+  /// Callback called when signed data has been verified and approved.
+  final void Function(Map<String, dynamic> data)? onDataVerified;
 
-  const ScanHealthCenter({
+  const ScanQRCode({
     super.key,
-    required this.user,
-    required this.vaccines,
-    required this.onAddVaccine,
+    this.onDataVerified,
   });
 
   @override
-  State<ScanHealthCenter> createState() => _ScanHealthCenterState();
+  State<ScanQRCode> createState() => _ScanQRCodeState();
 }
 
-class _ScanHealthCenterState extends State<ScanHealthCenter> {
-  final name = TextEditingController();
-  final date = TextEditingController(text: '2024-12-15');
-  final nextDose = TextEditingController();
-  final batch = TextEditingController();
-  final location = TextEditingController(text: 'UBS Centro');
-  final doctor = TextEditingController(text: 'Dr(a). Responsável');
+class _ScanQRCodeState extends State<ScanQRCode> {
+  final MobileScannerController _controller = MobileScannerController(
+    detectionSpeed: DetectionSpeed.noDuplicates,
+    facing: CameraFacing.back,
+    torchEnabled: false,
+  );
+
+  bool _handled = false;
 
   @override
   void dispose() {
-    name.dispose(); date.dispose(); nextDose.dispose(); batch.dispose(); location.dispose(); doctor.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
-  void submit() {
-    if (name.text.isEmpty || date.text.isEmpty || batch.text.isEmpty || location.text.isEmpty || doctor.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preencha os campos obrigatórios')));
+  void _onDetect(BarcodeCapture capture) async {
+    if (_handled) return;
+    final barcodes = capture.barcodes;
+    if (barcodes.isEmpty) return;
+
+    final raw = barcodes.first.rawValue;
+    if (raw == null || raw.isEmpty) return;
+
+    _handled = true; // avoid multiple dialogs
+    // First, try to decode JSON
+    dynamic parsed;
+    try {
+      parsed = jsonDecode(raw);
+    } catch (_) {
+      parsed = null;
+    }
+
+    if (!mounted) return;
+
+    if (parsed == null) {
+      await _showInfo(
+        title: 'QR read (text)',
+        message: raw,
+      );
+      _handled = false;
       return;
     }
-    widget.onAddVaccine(
-      name: name.text.trim(),
-      date: date.text.trim(),
-      nextDose: nextDose.text.trim().isEmpty ? null : nextDose.text.trim(),
-      batch: batch.text.trim(),
-      location: location.text.trim(),
-      doctor: doctor.text.trim(),
+
+    // If it's an object with data+signature, validate the signature
+    if (parsed is Map &&
+        parsed.containsKey('data') &&
+        parsed.containsKey('signature')) {
+      final keyManager = StellarKeyManager();
+      final crypto = StellarCrypto(keyManager);
+      final signedJson = raw;
+      final valid = crypto.verifySignedJsonString(signedJson);
+      if (!valid) {
+        await _showInfo(
+            title: 'Invalid signature',
+            message: 'The QR signature could not be verified.');
+        _handled = false;
+        return;
+      }
+
+      final data = Map<String, dynamic>.from(parsed['data'] as Map);
+      // Show data preview and ask for approval
+      final approved = await _showVerifiedDataAndConfirm(data);
+      if (!mounted) return;
+      if (approved == true) {
+        // Callback to caller with verified data
+        widget.onDataVerified?.call(data);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Data verified and approved.')),
+        );
+        Navigator.of(context).maybePop();
+      } else {
+        _handled = false;
+      }
+      return;
+    }
+
+    // If JSON but not the expected signed format, show its content
+    await _showInfo(
+      title: 'QR JSON read',
+      message: jsonEncode(parsed),
     );
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vacina adicionada com sucesso!')));
-    name.clear(); batch.clear();
+    _handled = false;
+  }
+
+  Future<void> _showInfo(
+      {required String title, required String message}) async {
+    return showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(child: Text(message)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool?> _showVerifiedDataAndConfirm(Map<String, dynamic> data) async {
+    final sb = StringBuffer();
+    data.forEach((k, v) {
+      sb.writeln('$k: $v');
+    });
+
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Verified data'),
+        content: SingleChildScrollView(child: Text(sb.toString())),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Reject'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Approve'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 🔹 new: help dialog
+  void _showHelp() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('How scanning works'),
+        content: const SingleChildScrollView(
+          child: Text(
+            'This QR Code contains the user’s vaccination data and a cryptographic signature generated from their private key. By scanning it, other people can check the vaccination record, since the app validates the signature with the user’s public key.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Leitura de usuário (simulada)'),
-              const SizedBox(height: 8),
-              Text('CPF: ${widget.user.cpf}\nNome: ${widget.user.name}'),
-              const SizedBox(height: 8),
-              const Text('Em produção, substitua por câmera + leitor de QR.'),
-            ]),
+    // Simple UI: camera + frame + controls (help / flash / switch camera)
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Scan Wallet'),
+        actions: [
+          IconButton(
+            onPressed: _showHelp, // ⬅️ help button
+            icon: const Icon(Icons.help_outline),
+            tooltip: 'Help',
           ),
-        ),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Cadastrar nova vacina', style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 12),
-              TextField(controller: name, decoration: const InputDecoration(labelText: 'Nome da vacina *')),
-              TextField(controller: date, decoration: const InputDecoration(labelText: 'Data de aplicação (yyyy-MM-dd) *')),
-              TextField(controller: nextDose, decoration: const InputDecoration(labelText: 'Próxima dose (yyyy-MM-dd)')),
-              TextField(controller: batch, decoration: const InputDecoration(labelText: 'Lote *')),
-              TextField(controller: location, decoration: const InputDecoration(labelText: 'Local *')),
-              TextField(controller: doctor, decoration: const InputDecoration(labelText: 'Profissional *')),
-              const SizedBox(height: 12),
-              FilledButton.icon(onPressed: submit, icon: const Icon(Icons.add), label: const Text('Adicionar vacina')),
-            ]),
+          IconButton(
+            onPressed: () => _controller.toggleTorch(),
+            icon: const Icon(Icons.flash_on),
+            tooltip: 'Flash',
           ),
-        ),
-      ],
+          IconButton(
+            onPressed: () => _controller.switchCamera(),
+            icon: const Icon(Icons.cameraswitch),
+            tooltip: 'Switch camera',
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          MobileScanner(
+            controller: _controller,
+            onDetect: _onDetect,
+            fit: BoxFit.cover,
+          ),
+          IgnorePointer(
+            child: Center(
+              child: Container(
+                width: 260,
+                height: 260,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.9),
+                    width: 2,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+          // Fixed tip
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 24,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.55),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'Point the camera at the QR.\n'
+                    'When a valid QR is recognized, a confirmation to add will be shown.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,15 +1,15 @@
 class User {
-  final String id;
   final String name;
-  final String email;
   final String birthDate;
   final String cpf;
+  final String publicKey;
+  final String? email;
 
   const User({
-    required this.id,
     required this.name,
-    required this.email,
     required this.birthDate,
     required this.cpf,
+    required this.publicKey,
+    this.email,
   });
 }
