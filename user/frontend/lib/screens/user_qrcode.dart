@@ -175,9 +175,7 @@ class UserQRCode extends StatelessWidget {
         backgroundColor: _branco,
         title: const Text('What is this QR Code?'),
         content: const Text(
-          'This QR Code represents your "User Identity": name, CPF, email, and date of birth, '
-              'encoded in JSON for quick reading by authorized apps.\n\n'
-              'Privacy: the content is not encrypted. Share only with trusted services.',
+          'This QR Code contains the user’s personal data and a signature generated from their private key. In this way, it will be possible to prove the vaccination to other institutions and confirm the dosage at the health center.',
         ),
         actions: [
           TextButton(

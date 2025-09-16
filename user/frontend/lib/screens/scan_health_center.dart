@@ -153,17 +153,7 @@ class _ScanQRCodeState extends State<ScanQRCode> {
         title: const Text('How scanning works'),
         content: const SingleChildScrollView(
           child: Text(
-            '1) Point the camera at the patient/record QR.\n'
-                '2) When recognized, the app tries to read the content as JSON.\n'
-                '3) If the JSON has a valid signature, you can view and approve the data.\n\n'
-                'Expected format:\n'
-                '• JSON with fields inside "data" and a string "signature" (Base64).\n\n'
-                'Tips:\n'
-                '• Turn on the flash if the environment is dark.\n'
-                '• Move closer or further so the QR is sharp inside the frame.\n'
-                '• If plain text (non-JSON) is read, the app shows the raw text.\n\n'
-                'Privacy:\n'
-                '• The scanned content is only used to fill the fields and is not sent to servers.',
+            'This QR Code contains the user’s vaccination data and a cryptographic signature generated from their private key. By scanning it, other people can check the vaccination record, since the app validates the signature with the user’s public key.',
           ),
         ),
         actions: [
