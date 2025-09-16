@@ -68,10 +68,10 @@ class _UnlockWalletScreenState extends State<UnlockWalletScreen>
       curve: const Interval(0.15, 1.0, curve: Curves.easeOut),
     );
 
-    _ctrl.forward();
-
-    // Try biometric on start, with timeout
-    _tryBiometric();
+    // start animation after first frame to avoid timing issues
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _ctrl.forward();
+    });
   }
 
   @override
