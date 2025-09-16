@@ -7,11 +7,26 @@ dependencies:
   flutter:
     sdk: flutter
   google_fonts: ^6.2.1
+  image_picker: ^1.1.1
+  local_auth: ^2.1.8
+  device_info_plus: ^10.1.0
+  google_mlkit_commons: ^0.11.0
+  google_mlkit_face_detection: ^0.13.1
+  google_mlkit_text_recognition: ^0.15.0
+  tflite_flutter: ^0.11.0
+  flutter_secure_storage: ^9.2.2
+  image: ^4.1.7
+  diacritic: ^0.1.5
+  qr_flutter: ^4.1.0
+
 
 flutter:
   uses-material-design: true
   assets:
     - assets/logo.png
     - assets/logoroxo.png
+    - assets/logoroxo2.png
     - assets/logoroxometade.png
+    - assets/models/mobilefacenet.tflite
+
 

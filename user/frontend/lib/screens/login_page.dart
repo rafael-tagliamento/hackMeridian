@@ -11,11 +11,53 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMixin {
   final name = TextEditingController();
   final email = TextEditingController();
   final cpf = TextEditingController();
   final birth = TextEditingController(text: '2000-01-01');
+
+  late final AnimationController _ctrl;
+  late final Animation<Offset> _titleSlide; // desce
+  late final Animation<double> _titleFade;
+  late final Animation<Offset> _logoSlide;  // sobe
+  late final Animation<double> _logoFade;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+
+    _titleSlide = Tween<Offset>(
+      begin: const Offset(0, -0.30),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.0, 0.7, curve: Curves.easeOutCubic),
+    ));
+    _titleFade = CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
+    );
+
+    _logoSlide = Tween<Offset>(
+      begin: const Offset(0, 0.30),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.15, 1.0, curve: Curves.easeOutCubic),
+    ));
+    _logoFade = CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.15, 1.0, curve: Curves.easeOut),
+    );
+
+    _ctrl.forward();
+  }
 
   @override
   void dispose() {
@@ -23,18 +65,23 @@ class _LoginPageState extends State<LoginPage> {
     email.dispose();
     cpf.dispose();
     birth.dispose();
+    _ctrl.dispose();
     super.dispose();
   }
 
+  // QUALQUER LOGIN ENTRA (modo permissivo)  // <<<
   void submit() {
-    if (name.text.isEmpty || email.text.isEmpty || cpf.text.isEmpty) return;
+    final n = name.text.trim().isEmpty ? 'Usuário' : name.text.trim();          // <<<
+    final e = email.text.trim();                                                // <<<
+    final c = cpf.text.trim().isEmpty ? '00000000000' : cpf.text.trim();        // <<<
+    final b = birth.text.trim().isEmpty ? '2000-01-01' : birth.text.trim();     // <<<
+
     widget.onLogin(
       User(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: name.text.trim(),
-        email: email.text.trim(),
-        birthDate: birth.text.trim(),
-        cpf: cpf.text.trim(),
+        name: n,
+        email: e.isEmpty ? null : e,   // ✅ aqui estava o erro
+        birthDate: b,
+        cpf: c,
       ),
     );
   }
@@ -62,7 +109,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
 
-          // LOGO como plano de fundo no lado direito
+          // LOGO como plano de fundo no lado direito (entra SUBINDO)
           IgnorePointer(
             child: Align(
               alignment: Alignment.centerRight,
@@ -70,14 +117,20 @@ class _LoginPageState extends State<LoginPage> {
                 width: size.width * 0.55,
                 height: size.height,
                 child: ClipRect(
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: Image.asset(
-                      'assets/logoroxometade.png',
-                      width: size.width * 0.9,
-                      height: size.height * 0.9,
-                      fit: BoxFit.contain,
-                      alignment: Alignment.centerRight,
+                  child: SlideTransition(
+                    position: _logoSlide,
+                    child: FadeTransition(
+                      opacity: _logoFade,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Image.asset(
+                          'assets/logoroxometade.png',
+                          width: size.width * 0.9,
+                          height: size.height * 0.9,
+                          fit: BoxFit.contain,
+                          alignment: Alignment.centerRight,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -90,10 +143,9 @@ class _LoginPageState extends State<LoginPage> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: FractionallySizedBox(
-                widthFactor: 0.62, // ocupa mais que metade, como você preferiu
+                widthFactor: 0.62,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                  // Faz o conteúdo ocupar ao menos a altura da tela → permite Spacer()
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       return SingleChildScrollView(
@@ -102,26 +154,36 @@ class _LoginPageState extends State<LoginPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const SizedBox(height: 180), // 👈 aumenta/diminui esse valor para regular a margem do topo
-                              const BigTitle(),        // título grande
+                              const SizedBox(height: 180),
+
+                              // TÍTULO (entra DESCENDO)
+                              SlideTransition(
+                                position: _titleSlide,
+                                child: FadeTransition(
+                                  opacity: _titleFade,
+                                  child: const BigTitle(),
+                                ),
+                              ),
                               const SizedBox(height: 16),
 
-                              const Spacer(),         // empurra o formulário para baixo 👇
+                              const Spacer(),
 
-                              // Formulário
+                              // Formulário (pode ficar tudo vazio; vai entrar mesmo assim)  // <<<
                               TextField(
                                 controller: name,
                                 decoration: const InputDecoration(labelText: 'Nome completo'),
+                                onSubmitted: (_) => submit(), // Enter envia     // <<<
                               ),
                               const SizedBox(height: 16),
                               TextField(
                                 controller: cpf,
                                 decoration: const InputDecoration(labelText: 'CPF'),
+                                onSubmitted: (_) => submit(), // Enter envia     // <<<
                               ),
                               const SizedBox(height: 24),
 
                               FilledButton(
-                                onPressed: submit,
+                                onPressed: submit, // sem verificação          // <<<
                                 child: const Text('Entrar'),
                               ),
                               const SizedBox(height: 12),
@@ -130,7 +192,7 @@ class _LoginPageState extends State<LoginPage> {
                                 onPressed: widget.onCreateAccount,
                                 child: const Text(
                                   'Criar conta',
-                                  style: TextStyle(color: Color(0xFF000000)), // preto
+                                  style: TextStyle(color: Color(0xFF000000)),
                                 ),
                               ),
                             ],
@@ -154,17 +216,18 @@ class BigTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Título grande em 3 linhas
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'CARTEIRA DE',
-          softWrap: false,               // não quebra
-          overflow: TextOverflow.visible, // deixa passar se não couber
+          softWrap: false,
+          overflow: TextOverflow.visible,
           style: GoogleFonts.archivoBlack(
-            fontSize: 40,                // gigante, fixo
+            fontSize: 40,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF000000),
+            color: const Color(0xFF000000),
             height: 1.1,
           ),
         ),
@@ -175,7 +238,7 @@ class BigTitle extends StatelessWidget {
           style: GoogleFonts.archivoBlack(
             fontSize: 40,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF000000),
+            color: const Color(0xFF000000),
             height: 1.1,
           ),
         ),
@@ -186,7 +249,7 @@ class BigTitle extends StatelessWidget {
           style: GoogleFonts.archivoBlack(
             fontSize: 40,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF000000),
+            color: const Color(0xFF000000),
             height: 1.1,
           ),
         ),
