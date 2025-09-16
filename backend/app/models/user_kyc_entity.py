@@ -1,15 +1,19 @@
 from datetime import datetime, timezone
 from sqlalchemy import String, DateTime, Integer, UniqueConstraint, Index
-from sqlalchemy.orm import Mapped, mapped_column
-from .token_entity import Base
+from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
+
+
+# SQLAlchemy base class
+class Base(DeclarativeBase):
+    pass
 
 
 class UserKYC(Base):
     __tablename__ = "user_kyc"
     __table_args__ = (
         UniqueConstraint("wallet_address", name="uq_user_wallet"),
-        # Evita duplicidade do mesmo documento no mesmo país
-        UniqueConstraint("document_id", "country", name="uq_doc_country"),
+        # Evita duplicidade do mesmo documento
+        UniqueConstraint("document_id", name="uq_doc"),
         Index("ix_user_kyc_created_at", "created_at"),
     )
 

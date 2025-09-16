@@ -2,8 +2,16 @@ name: vacinacao_app
 description: Conversão do front-end para Flutter
 environment:
   sdk: '>=3.4.0 <4.0.0'
+
 dependencies:
   flutter:
     sdk: flutter
+  google_fonts: ^6.2.1
+
 flutter:
   uses-material-design: true
+  assets:
+    - assets/logo.png
+    - assets/logoroxo.png
+    - assets/logoroxometade.png
+

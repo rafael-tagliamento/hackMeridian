@@ -2,7 +2,7 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from ..core.config import settings
-from ..models.user_kyc_entity import UserKYC
+from ..models.user_kyc_entity import Base
 
 
 engine = create_engine(settings.DB_URL, echo=False, future=True)
@@ -12,7 +12,7 @@ SessionLocal = sessionmaker(
 
 
 def create_tables() -> None:
-    UserKYC.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
 
 @contextmanager
