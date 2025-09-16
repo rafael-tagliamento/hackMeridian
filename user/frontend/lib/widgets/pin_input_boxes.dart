@@ -23,16 +23,17 @@ class PinInputBoxes extends StatefulWidget {
 }
 
 class _PinInputBoxesState extends State<PinInputBoxes> {
-  late final List<FocusNode> _focusNodes;
   late final List<TextEditingController> _controllers;
   late final TextEditingController _hiddenController;
+  late final FocusNode _hiddenFocusNode;
 
   @override
   void initState() {
     super.initState();
-    _focusNodes = List.generate(widget.length, (_) => FocusNode());
+    // usamos um FocusNode único para o TextField oculto.
     _controllers = List.generate(widget.length, (_) => TextEditingController());
     _hiddenController = widget.controller ?? TextEditingController();
+    _hiddenFocusNode = FocusNode();
     // sync hidden controller -> individual boxes
     _hiddenController.addListener(_onHiddenChanged);
   }
@@ -50,9 +51,7 @@ class _PinInputBoxesState extends State<PinInputBoxes> {
 
   @override
   void dispose() {
-    for (final n in _focusNodes) {
-      n.dispose();
-    }
+    _hiddenFocusNode.dispose();
     for (final c in _controllers) {
       c.dispose();
     }
@@ -65,7 +64,10 @@ class _PinInputBoxesState extends State<PinInputBoxes> {
     final filled = _controllers[index].text.isNotEmpty;
     return GestureDetector(
       onTap: () {
-        FocusScope.of(context).requestFocus(_focusNodes[index]);
+        // Foca o TextField oculto e posiciona o caret no final
+        FocusScope.of(context).requestFocus(_hiddenFocusNode);
+        _hiddenController.selection =
+            TextSelection.collapsed(offset: _hiddenController.text.length);
       },
       child: Container(
         width: 44,
@@ -89,10 +91,11 @@ class _PinInputBoxesState extends State<PinInputBoxes> {
     return Column(
       children: [
         // Hidden TextField for actual input (handles keyboard/paste/backspace)
-        SizedBox(
-          height: 0,
-          width: 0,
+        // Hidden TextField for actual input (handles keyboard/paste/backspace)
+        Offstage(
+          offstage: true,
           child: TextField(
+            focusNode: _hiddenFocusNode,
             controller: _hiddenController,
             autofocus: false,
             enableSuggestions: false,
@@ -101,7 +104,6 @@ class _PinInputBoxesState extends State<PinInputBoxes> {
             obscureText: false,
             maxLength: widget.length,
             decoration: const InputDecoration(counterText: ''),
-            // onChanged is already handled by controller listener
           ),
         ),
         Row(
@@ -115,15 +117,12 @@ class _PinInputBoxesState extends State<PinInputBoxes> {
         ),
         const SizedBox(height: 8),
         // Make the whole row tappable to focus the hidden field
+        // Make the whole row tappable to focus the hidden field
         GestureDetector(
           onTap: () {
-            FocusScope.of(context).requestFocus(FocusNode());
-            // attach focus to hidden field by requesting keyboard
-            FocusScope.of(context).requestFocus(FocusNode());
-            // hack: focus to the underlying (hidden) textfield by using primaryFocus
-            FocusScope.of(context).requestFocus();
-            // Show keyboard by focusing a new FocusNode is unreliable; instead
-            // we bring up keyboard by requesting focus on an invisible node via context
+            FocusScope.of(context).requestFocus(_hiddenFocusNode);
+            _hiddenController.selection =
+                TextSelection.collapsed(offset: _hiddenController.text.length);
           },
           child: const SizedBox.shrink(),
         ),
