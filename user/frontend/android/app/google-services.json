@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "122064159390",
+    "project_id": "hackmeridian-ca922",
+    "storage_bucket": "hackmeridian-ca922.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:122064159390:android:86010e22b3b0e4ce54718f",
+        "android_client_info": {
+          "package_name": "com.android.application"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA4pmddN5LoXZGVYY4NTGZMwaDwWEKQm70"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
