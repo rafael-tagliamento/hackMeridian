@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { SyringeIcon } from './components/syringe-icon';
 import { BlockchainIcon } from './components/blockchain-icon';
 import { QRScanner } from './components/qr-scanner';
+import { WebcamScanner } from './components/WebcamScanner'; 
 import { VaccinationLists } from './components/vaccination-lists';
 import { MaterialSelect } from './components/material-select';
 import { Button } from './components/ui/button';
