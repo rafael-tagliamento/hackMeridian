@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 
 // IMPORTA O SEU TEMA NOVO (opcional – use se já tiver configurado)
-import 'theme/theme.dart'; // ajuste o caminho se precisar
+import 'theme/theme.dart';
 
 import 'models/user.dart';
 import 'models/vaccine.dart';
 import 'utils/hash_generator.dart';
+
+// Telas
 import 'screens/login_page.dart';
 import 'screens/create_account.dart';
 import 'screens/tab_navigation.dart';
-import 'screens/user_qrcode.dart';
-import 'screens/vaccination_calendar.dart';
-import 'screens/scan_health_center.dart';
+import 'screens/vaccination_calendar.dart';  // ⬅️ ADICIONE ESTE
+// --- Use aliases para evitar conflitos ---
+import 'screens/user_qrcode.dart' as uq;      // ⬅️ MANTENHA SÓ ESTE (com alias)
+import 'screens/scan_health_center.dart' as shc;
 
 void main() => runApp(const VaccinationApp());
 
@@ -174,16 +177,16 @@ class _AppState extends State<App> {
     Widget body;
     switch (activeTab) {
       case TabType.qr:
-        body = UserQRCode(user: user!);
+        body = uq.UserQRCode(user: user!);   // usa o UserQRCode da pasta user_qrcode
         break;
       case TabType.calendario:
         body = VaccinationCalendar(user: user!, vaccines: vaccines);
         break;
       case TabType.historico:
-        body = HistoricoPage(vaccines: vaccines); // placeholder simples
+        body = HistoricoPage(vaccines: vaccines);
         break;
       case TabType.scanner:
-        body = ScanHealthCenter(
+        body = shc.ScanHealthCenter(        // usa o ScanHealthCenter da pasta scan_health_center
           user: user!,
           vaccines: vaccines,
           onAddVaccine: addVaccine,
