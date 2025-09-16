@@ -8,6 +8,7 @@ class Settings(BaseSettings):
 
     STELLAR_SECRET_KEY: str
     STELLAR_PUBLIC_KEY: str
+    VACCINE_CONTRACT_ID: str
     STELLAR_NETWORK_URL: str = "https://horizon-testnet.stellar.org"  # Testnet URL
     # Database URL (SQLite local por padrão)
     DB_URL: str = "sqlite:///./vaccine.db"
