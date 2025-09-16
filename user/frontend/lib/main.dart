@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// IMPORTA O SEU TEMA NOVO (opcional – use se já tiver configurado)
 import 'theme/theme.dart';
 
 import 'models/user.dart';
@@ -11,9 +10,8 @@ import 'utils/hash_generator.dart';
 import 'screens/login_page.dart';
 import 'screens/create_account.dart';
 import 'screens/tab_navigation.dart';
-import 'screens/vaccination_calendar.dart';  // ⬅️ ADICIONE ESTE
-// --- Use aliases para evitar conflitos ---
-import 'screens/user_qrcode.dart' as uq;      // ⬅️ MANTENHA SÓ ESTE (com alias)
+import 'screens/vaccination_calendar.dart';
+import 'screens/user_qrcode.dart' as uq;
 import 'screens/scan_health_center.dart' as shc;
 
 void main() => runApp(const VaccinationApp());
@@ -26,7 +24,6 @@ class VaccinationApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
 
-      // ⬇️ aplique seu tema aqui, se tiver
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
       themeMode: ThemeMode.system,
@@ -36,7 +33,6 @@ class VaccinationApp extends StatelessWidget {
   }
 }
 
-// ✅ Enum unificado com os rótulos usados na navbar
 enum TabType { qr, calendario, historico, scanner }
 
 class App extends StatefulWidget {
