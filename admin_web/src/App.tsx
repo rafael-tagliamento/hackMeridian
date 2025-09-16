@@ -1,17 +1,24 @@
-import React, { useState } from 'react';
-import { QRScanner } from './components/qr-scanner';
-import { VaccinationLists, mockVaccines } from './components/vaccination-lists';
-import { MaterialSelect } from './components/material-select';
-import { MaterialNotification } from './components/MaterialNotification';
-import { Button } from './components/ui/button';
-import { Input } from './components/ui/input';
-import { Label } from './components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
-import { CheckCircle, User, LogOut, Syringe } from 'lucide-react';
-import { QRCodeData } from './utils/stellar-validation';
+import React, { useState } from "react";
+import { QRScanner } from "./components/qr-scanner";
+import { VaccinationLists, mockVaccines } from "./components/vaccination-lists";
+import { MaterialSelect } from "./components/material-select";
+import { MaterialNotification } from "./components/MaterialNotification";
+import { Button } from "./components/ui/button";
+import { Input } from "./components/ui/input";
+import { Label } from "./components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
+import { CheckCircle, User, LogOut, Syringe } from "lucide-react";
+import { QRCodeData } from "./utils/stellar-validation";
+import logoImage from "./assets/logoroxo.png";
 
-
-type Screen = 'login' | 'register' | 'dashboard' | 'profile' | 'scanner' | 'vaccination' | 'success';
+type Screen =
+  | "login"
+  | "register"
+  | "dashboard"
+  | "profile"
+  | "scanner"
+  | "vaccination"
+  | "success";
 
 interface User {
   name: string;
@@ -37,12 +44,12 @@ export default function App() {
   // Estados para notificações
   const [notification, setNotification] = useState<{
     message: string;
-    type: 'error' | 'success' | 'info';
+    type: "error" | "success" | "info";
     isVisible: boolean;
   }>({
-    message: '',
-    type: 'info',
-    isVisible: false
+    message: "",
+    type: "info",
+    isVisible: false,
   });
 
   // Estados do formulário de cadastro
@@ -65,7 +72,7 @@ export default function App() {
 
   // State for scanned QR data
   const [scannedData, setScannedData] = useState<QRCodeData | null>(null);
-  const [scanError, setScanError] = useState<string>('');
+  const [scanError, setScanError] = useState<string>("");
 
   const clinics = [
     "Wellness Clinic",
@@ -87,32 +94,38 @@ export default function App() {
     "LOTE005-2024",
   ];
 
-  const showNotification = (message: string, type: 'error' | 'success' | 'info') => {
+  const showNotification = (
+    message: string,
+    type: "error" | "success" | "info"
+  ) => {
     setNotification({
       message,
       type,
-      isVisible: true
+      isVisible: true,
     });
   };
 
   const hideNotification = () => {
-    setNotification(prev => ({ ...prev, isVisible: false }));
+    setNotification((prev) => ({ ...prev, isVisible: false }));
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     // Simulate authentication delay for better UX
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     // Validation to allow only the user "maria123"
     if (loginForm.login !== "maria123") {
-      showNotification("Data doesn't match. Please check your credentials.", "error");
+      showNotification(
+        "Data doesn't match. Please check your credentials.",
+        "error"
+      );
       setIsLoading(false);
       return;
     }
-    
+
     // Successful login for maria123
     setUser({
       name: "Maria Silva",
@@ -129,37 +142,43 @@ export default function App() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     if (registerForm.password !== registerForm.confirmPassword) {
-      showNotification("Passwords don't match. Please check and try again.", "error");
+      showNotification(
+        "Passwords don't match. Please check and try again.",
+        "error"
+      );
       setIsLoading(false);
       return;
     }
-    
+
     // Simulate processing
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
     setRegistrationSuccess(true);
-    showNotification("Registration successful! Please wait for approval.", "success");
+    showNotification(
+      "Registration successful! Please wait for approval.",
+      "success"
+    );
     setIsLoading(false);
   };
 
   const handleVaccination = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // TODO: Implement backend integration to confirm vaccine
     // Data to be sent:
     // - scannedData (patient data)
     // - vaccinationForm.vaccine
     // - vaccinationForm.lot
-    
+
     showNotification("Vaccine confirmed successfully!", "success");
-    
+
     // Reset form and return to scanner
     setTimeout(() => {
       setCurrentScreen("scanner");
       setScannedData(null);
-      setScanError('');
+      setScanError("");
       setVaccinationForm({
         date: new Date(),
         patientName: "",
@@ -191,7 +210,7 @@ export default function App() {
     setCurrentScreen("login");
     setLoginForm({ login: "", password: "" });
     setScannedData(null);
-    setScanError('');
+    setScanError("");
     setVaccinationForm({
       date: new Date(),
       patientName: "",
@@ -209,17 +228,23 @@ export default function App() {
             <div className="p-8">
               <div className="text-center mb-8">
                 <div className="flex justify-center mb-6">
-                  <img 
-                    src="./src/assets/logoroxo.png" 
-                    alt="Logo" 
+                  <img
+                    src="./src/assets/logoroxo.png"
+                    alt="Logo"
                     className="logo-animation"
-                    style={{ width: '80px', height: '80px' }}
+                    style={{ width: "80px", height: "80px" }}
                   />
                 </div>
-                <h1 className="md-headline-small" style={{ color: 'var(--md-primary)' }}>
+                <h1
+                  className="md-headline-small"
+                  style={{ color: "var(--md-primary)" }}
+                >
                   Welcome to the System
                 </h1>
-                <p className="md-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
+                <p
+                  className="md-body-medium"
+                  style={{ color: "var(--md-on-surface-variant)" }}
+                >
                   Vaccine Administrator Portal
                 </p>
               </div>
@@ -234,7 +259,10 @@ export default function App() {
                     type="text"
                     value={loginForm.login}
                     onChange={(e) =>
-                      setLoginForm((prev) => ({ ...prev, login: e.target.value }))
+                      setLoginForm((prev) => ({
+                        ...prev,
+                        login: e.target.value,
+                      }))
                     }
                     className="material-input w-full"
                     placeholder="Enter your username"
@@ -284,12 +312,15 @@ export default function App() {
               </form>
 
               <div className="text-center mt-6">
-                <p className="md-body-small" style={{ color: 'var(--md-on-surface-variant)' }}>
+                <p
+                  className="md-body-small"
+                  style={{ color: "var(--md-on-surface-variant)" }}
+                >
                   Don't have an account?{" "}
                   <button
                     onClick={() => setCurrentScreen("register")}
                     className="font-medium hover:underline transition-all duration-200"
-                    style={{ color: 'var(--md-primary)' }}
+                    style={{ color: "var(--md-primary)" }}
                     disabled={isLoading}
                   >
                     Register here
@@ -319,15 +350,25 @@ export default function App() {
             <div className="p-8 text-center">
               <div className="flex justify-center mb-6">
                 <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-                  <CheckCircle size={32} style={{ color: 'var(--md-success)' }} />
+                  <CheckCircle
+                    size={32}
+                    style={{ color: "var(--md-success)" }}
+                  />
                 </div>
               </div>
-              <h2 className="md-headline-small mb-4" style={{ color: 'var(--md-on-success-container)' }}>
+              <h2
+                className="md-headline-small mb-4"
+                style={{ color: "var(--md-on-success-container)" }}
+              >
                 Registration Completed!
               </h2>
-              <p className="md-body-medium mb-6" style={{ color: 'var(--md-on-success-container)' }}>
-                Your account has been successfully created. Please wait for administrator approval 
-                to confirm your connection with the selected clinic.
+              <p
+                className="md-body-medium mb-6"
+                style={{ color: "var(--md-on-success-container)" }}
+              >
+                Your account has been successfully created. Please wait for
+                administrator approval to confirm your connection with the
+                selected clinic.
               </p>
               <button
                 onClick={() => {
@@ -360,23 +401,32 @@ export default function App() {
             <div className="text-center mb-8">
               <div className="flex justify-center mb-4">
                 <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
-                  <User size={32} style={{ color: 'var(--md-primary)' }} />
+                  <User size={32} style={{ color: "var(--md-primary)" }} />
                 </div>
               </div>
-              <h1 className="md-headline-small" style={{ color: 'var(--md-primary)' }}>
+              <h1
+                className="md-headline-small"
+                style={{ color: "var(--md-primary)" }}
+              >
                 New Administrator
               </h1>
-              <p className="md-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
+              <p
+                className="md-body-medium"
+                style={{ color: "var(--md-on-surface-variant)" }}
+              >
                 Create your account to access the system
               </p>
             </div>
 
             <form onSubmit={handleRegister} className="space-y-6">
               <div className="space-y-6">
-                <h3 className="md-title-medium" style={{ color: 'var(--md-primary)' }}>
+                <h3
+                  className="md-title-medium"
+                  style={{ color: "var(--md-primary)" }}
+                >
                   Access Data
                 </h3>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="register-login" className="material-label">
                     Username
@@ -399,7 +449,10 @@ export default function App() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label htmlFor="register-password" className="material-label">
+                    <label
+                      htmlFor="register-password"
+                      className="material-label"
+                    >
                       Password
                     </label>
                     <input
@@ -419,7 +472,10 @@ export default function App() {
                   </div>
 
                   <div className="space-y-2">
-                    <label htmlFor="confirm-password" className="material-label">
+                    <label
+                      htmlFor="confirm-password"
+                      className="material-label"
+                    >
                       Confirm password
                     </label>
                     <input
@@ -441,10 +497,13 @@ export default function App() {
               </div>
 
               <div className="space-y-6">
-                <h3 className="md-title-medium" style={{ color: 'var(--md-primary)' }}>
+                <h3
+                  className="md-title-medium"
+                  style={{ color: "var(--md-primary)" }}
+                >
                   Personal Information
                 </h3>
-                
+
                 <div className="space-y-2">
                   <label htmlFor="name" className="material-label">
                     Full name
@@ -487,9 +546,7 @@ export default function App() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="material-label">
-                      Clinic
-                    </label>
+                    <label className="material-label">Clinic</label>
                     <select
                       value={registerForm.clinic}
                       onChange={(e) =>
@@ -517,14 +574,14 @@ export default function App() {
                   type="button"
                   onClick={() => setCurrentScreen("login")}
                   className="flex-1 py-3 px-6 rounded-full border-2 transition-all duration-200 hover:bg-gray-50"
-                  style={{ 
-                    borderColor: 'var(--md-outline)',
-                    color: 'var(--md-on-surface-variant)'
+                  style={{
+                    borderColor: "var(--md-outline)",
+                    color: "var(--md-on-surface-variant)",
                   }}
                 >
                   Cancel
                 </button>
-                
+
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -565,7 +622,11 @@ export default function App() {
             style={{ backgroundColor: "#C89DFF" }}
           >
             <div className="flex items-center gap-2 mb-8">
-              <img src="./src/assets/logoroxo.png" alt="Logo" style={{ width: '32px', height: '32px' }} />
+              <img
+                src="./src/assets/logoroxo.png"
+                alt="Logo"
+                style={{ width: "32px", height: "32px" }}
+              />
               <h1>ImmuneChain</h1>
             </div>
 
@@ -619,7 +680,7 @@ export default function App() {
             </div>
           )}
 
-          {currentScreen === 'profile' && (
+          {currentScreen === "profile" && (
             <div className="flex flex-col items-center justify-center min-h-[80vh]">
               <h1 className="mb-6 text-center">My Registration Information</h1>
               <Card className="max-w-md w-full">
@@ -646,7 +707,10 @@ export default function App() {
           {currentScreen === "scanner" && (
             <div>
               <h1 className="mb-6">Patient QR Code Scanner</h1>
-              <QRScanner onScanSuccess={handleScanSuccess} onValidationError={handleScanError} />
+              <QRScanner
+                onScanSuccess={handleScanSuccess}
+                onValidationError={handleScanError}
+              />
             </div>
           )}
 
@@ -662,7 +726,10 @@ export default function App() {
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle className="h-5 w-5" style={{ color: '#B589FF' }} />
+                      <CheckCircle
+                        className="h-5 w-5"
+                        style={{ color: "#B589FF" }}
+                      />
                       <h3>Patient Data (QR Code Validated)</h3>
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm">
@@ -676,7 +743,9 @@ export default function App() {
                       </div>
                       <div>
                         <Label>Public Key</Label>
-                        <p className="truncate" title={scannedData.publicKey}>{scannedData.publicKey.substring(0, 20)}...</p>
+                        <p className="truncate" title={scannedData.publicKey}>
+                          {scannedData.publicKey.substring(0, 20)}...
+                        </p>
                       </div>
                     </div>
                   </CardContent>
