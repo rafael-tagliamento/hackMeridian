@@ -10,6 +10,7 @@ import '../utils/local_doc_selfie_verifier.dart'; // << novo import
 import '../utils/stellar.dart';
 import '../utils/security_service.dart';
 import '../utils/user_storage.dart';
+import '../widgets/pin_input_boxes.dart';
 
 /// ---------------------------------------------------------------------------
 /// TELA: Criação de conta em 2 etapas
@@ -348,17 +349,16 @@ class _CreateAccountState extends State<CreateAccount> {
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: pin,
-            decoration: const InputDecoration(labelText: 'PIN (4 a 6 dígitos)'),
-            keyboardType: TextInputType.number,
-            obscureText: true,
-            maxLength: 6,
-            buildCounter: (context,
-                    {required currentLength, required isFocused, maxLength}) =>
-                const SizedBox.shrink(),
-            textInputAction: TextInputAction.done,
-          ),
+          // PIN com 6 quadradinhos
+          SizedBox(height: 72, child: Center(child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: PinInputBoxes(
+              length: 6,
+              controller: pin,
+              obscure: true,
+              onChanged: (s) {},
+            ),
+          ))),
         ],
       ),
     );

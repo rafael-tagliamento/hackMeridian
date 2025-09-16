@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/security_service.dart';
+import '../widgets/pin_input_boxes.dart';
 
 class UnlockWalletScreen extends StatefulWidget {
   final SecurityService securityService;
@@ -65,14 +66,21 @@ class _UnlockWalletScreenState extends State<UnlockWalletScreen> {
             const Text('Digite seu PIN para acessar sua carteira Stellar',
                 style: TextStyle(fontSize: 16)),
             const SizedBox(height: 12),
-            TextField(
-              controller: _pinController,
-              obscureText: true,
-              maxLength: 6,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(labelText: 'PIN', errorText: _error),
-              onSubmitted: (_) => _submitPin(),
-            ),
+            SizedBox(height: 72, child: Center(child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                PinInputBoxes(
+                  length: 6,
+                  controller: _pinController,
+                  obscure: true,
+                  onCompleted: (_) => _submitPin(),
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 8),
+                  Text(_error!, style: const TextStyle(color: Colors.red)),
+                ]
+              ],),
+            ))),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _loading ? null : _submitPin,
