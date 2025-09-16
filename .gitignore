@@ -2,6 +2,9 @@
 */.venv/
 .env
 
+#Python
+*.cpython*
+
 # OS and IDE
 DS_Store
 .vscode

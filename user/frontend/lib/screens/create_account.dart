@@ -1,8 +1,5 @@
-import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,15 +7,16 @@ import 'package:local_auth/local_auth.dart';
 
 import '../models/user.dart';
 import '../utils/local_doc_selfie_verifier.dart'; // << novo import
+import '../utils/stellar.dart';
+import '../utils/security_service.dart';
+import '../utils/user_storage.dart';
 
 // Criação de uma conta
 class CreateAccount extends StatefulWidget {
   final void Function(User) onCreateAccount;
-  final VoidCallback onBackToLogin;
   const CreateAccount({
     super.key,
     required this.onCreateAccount,
-    required this.onBackToLogin,
   });
 
   @override
@@ -31,10 +29,10 @@ class _CreateAccountState extends State<CreateAccount> {
 
   // Controllers
   final name = TextEditingController();
-  final email = TextEditingController(); // pode ficar vazio se seu User permitir
   final cpf = TextEditingController();
   final birth = TextEditingController();
   final pin = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
 
   // Picked images
   final ImagePicker _picker = ImagePicker();
@@ -47,20 +45,34 @@ class _CreateAccountState extends State<CreateAccount> {
 
   bool _busy = false;
 
+  StellarKeyManager? _keyManager;
+  SecurityService? _security;
+  String? _seedShown;
+
+  late final UserStorage _userStorage;
+
+  @override
+  void initState() {
+    super.initState();
+    _keyManager = StellarKeyManager();
+    _security = SecurityService(keyManager: _keyManager!);
+    _userStorage = UserStorage();
+  }
+
   @override
   void dispose() {
     name.dispose();
-    email.dispose();
     cpf.dispose();
     birth.dispose();
     pin.dispose();
+    emailController.dispose();
     super.dispose();
   }
 
   // ---- Step navigation ----
   void _goBack() {
     if (_step == 0) {
-      widget.onBackToLogin();
+      return;
     } else {
       setState(() => _step = 0);
     }
@@ -79,6 +91,8 @@ class _CreateAccountState extends State<CreateAccount> {
     if (name.text.trim().isEmpty) errors.add('Nome');
     if (cpf.text.trim().isEmpty) errors.add('CPF');
     if (birth.text.trim().isEmpty) errors.add('Data de Nascimento');
+    final e = emailController.text.trim();
+    if (e.isEmpty) errors.add('Email');
     final p = pin.text.trim();
     if (p.isEmpty || p.length < 4 || p.length > 6) {
       errors.add('PIN (4 a 6 dígitos)');
@@ -128,7 +142,8 @@ class _CreateAccountState extends State<CreateAccount> {
     // para câmera frontal quando for selfie
     final x = await _picker.pickImage(
       source: source,
-      preferredCameraDevice: preferFrontCamera ? CameraDevice.front : CameraDevice.rear,
+      preferredCameraDevice:
+          preferFrontCamera ? CameraDevice.front : CameraDevice.rear,
       imageQuality: 85, // reduz tamanho → OCR mais estável/perf
     );
     return x;
@@ -143,12 +158,10 @@ class _CreateAccountState extends State<CreateAccount> {
 
     setState(() => _busy = true);
     try {
-      // BIOMETRIA
+      // biometria + verificação já existente
       final isSupported = await _auth.isDeviceSupported();
-      final canCheck    = await _auth.canCheckBiometrics;
-      final types       = await _auth.getAvailableBiometrics();
-      debugPrint('bio supported=$isSupported canCheck=$canCheck types=$types');
-
+      final canCheck = await _auth.canCheckBiometrics;
+      final types = await _auth.getAvailableBiometrics();
       bool bioOk = false;
       if (isSupported && canCheck && types.isNotEmpty) {
         bioOk = await _auth.authenticate(
@@ -160,16 +173,12 @@ class _CreateAccountState extends State<CreateAccount> {
           ),
         );
       } else {
-        // Sem biometria no device → aceita só PIN (ou mostre um diálogo próprio)
         bioOk = true;
       }
       if (!bioOk) {
         _showSnack('Autenticação biométrica não confirmada.');
         return;
       }
-
-      // VERIFICAÇÃO DOC x SELFIE (usa seu verificador local)
-      debugPrint('Iniciando verificação doc x selfie...');
       final faceOk = await LocalDocSelfieVerifier.instance.verify(
         docPath: _docImage!.path,
         selfiePath: _selfieImage!.path,
@@ -177,15 +186,54 @@ class _CreateAccountState extends State<CreateAccount> {
         expectedCpf: cpf.text,
         expectedBirthDate: birth.text,
       );
-      debugPrint('Resultado verificação: $faceOk');
       if (!faceOk) {
-        _showSnack('Não foi possível confirmar que a selfie corresponde ao documento.');
+        _showSnack('Não foi possível confirmar documento vs selfie.');
         return;
       }
-
-      // … vincular device, salvar PIN, criar usuário (igual ao seu código)
-      // ...
-
+      // Geração carteira + PIN
+      final kp = await _keyManager!.loadOrCreate();
+      await _security!.setPin(pin.text.trim());
+      final stellar = StellarService.forTestNet(_keyManager!);
+      await stellar.friendBotIfNeeded();
+      _seedShown = kp.secretSeed; // exibir uma vez
+      final user = User(
+          name: name.text.trim(),
+          cpf: cpf.text.trim(),
+          birthDate: birth.text.trim(),
+          publicKey: kp.accountId);
+      await _userStorage.save(user);
+      await _security!.markTrusted();
+      // Mostra seed em diálogo antes de concluir
+      // ignore: use_build_context_synchronously
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) {
+          return AlertDialog(
+            title: const Text('Backup da Seed'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                    'Anote e guarde sua seed. Ela não será mostrada novamente.'),
+                const SizedBox(height: 12),
+                SelectableText(
+                  _seedShown!,
+                  style: const TextStyle(fontFamily: 'monospace'),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Já anotei'),
+              )
+            ],
+          );
+        },
+      );
+      if (!mounted) return;
+      widget.onCreateAccount(user); // segue para app já autenticado
     } catch (e) {
       _showSnack('Erro ao concluir: $e');
     } finally {
@@ -194,43 +242,6 @@ class _CreateAccountState extends State<CreateAccount> {
   }
 
   // ---- Helpers ----
-  Future<String> _getDeviceId() async {
-    final info = DeviceInfoPlugin();
-    try {
-      if (Theme.of(context).platform == TargetPlatform.android) {
-        final a = await info.androidInfo;
-        return 'android:${a.id ?? a.fingerprint ?? 'unknown'}';
-      } else if (Theme.of(context).platform == TargetPlatform.iOS) {
-        final i = await info.iosInfo;
-        return 'ios:${i.identifierForVendor ?? 'unknown'}';
-      }
-    } catch (_) {}
-    final fb = base64UrlEncode(_randomBytes(24));
-    return 'rnd:$fb';
-  }
-
-  List<int> _randomBytes(int n) {
-    final r = Random.secure();
-    return List<int>.generate(n, (_) => r.nextInt(256));
-  }
-
-  // Exemplo didático (trocar por PBKDF2 real em produção)
-  List<int> _naivePbkdf2(String pin, List<int> salt, int iterations) {
-    var out = utf8.encode(pin) + salt;
-    for (int i = 0; i < iterations; i++) {
-      out = _sha256(out);
-    }
-    return out;
-  }
-
-  List<int> _sha256(List<int> input) {
-    final r = List<int>.from(input);
-    for (int i = 0; i < r.length; i++) {
-      r[i] = (r[i] ^ 0x5a) & 0xff; // placeholder
-    }
-    return r;
-  }
-
   void _showSnack(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
@@ -284,10 +295,10 @@ class _CreateAccountState extends State<CreateAccount> {
                   onPressed: _busy ? null : _finishAndCreate,
                   child: _busy
                       ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : const Text('Concluir e criar conta'),
                 ),
             ],
@@ -306,14 +317,12 @@ class _CreateAccountState extends State<CreateAccount> {
         children: [
           Image.asset('assets/logo.png', height: 90),
           const SizedBox(height: 24),
-
           TextField(
             controller: name,
             decoration: const InputDecoration(labelText: 'Nome completo'),
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 16),
-
           TextField(
             controller: cpf,
             decoration: const InputDecoration(labelText: 'CPF'),
@@ -321,7 +330,6 @@ class _CreateAccountState extends State<CreateAccount> {
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 16),
-
           TextField(
             controller: birth,
             decoration: const InputDecoration(
@@ -331,15 +339,22 @@ class _CreateAccountState extends State<CreateAccount> {
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 16),
-
+          TextField(
+            controller: emailController,
+            decoration: const InputDecoration(labelText: 'Email'),
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+          ),
+          const SizedBox(height: 16),
           TextField(
             controller: pin,
             decoration: const InputDecoration(labelText: 'PIN (4 a 6 dígitos)'),
             keyboardType: TextInputType.number,
             obscureText: true,
             maxLength: 6,
-            buildCounter: (context, {required currentLength, required isFocused, maxLength}) =>
-            const SizedBox.shrink(),
+            buildCounter: (context,
+                    {required currentLength, required isFocused, maxLength}) =>
+                const SizedBox.shrink(),
             textInputAction: TextInputAction.done,
           ),
         ],
@@ -355,21 +370,18 @@ class _CreateAccountState extends State<CreateAccount> {
         children: [
           Image.asset('assets/logo.png', height: 70),
           const SizedBox(height: 16),
-
           Text(
             'Verificação de identidade',
             style: Theme.of(context).textTheme.titleLarge,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
-
           Text(
             'Envie a foto do documento e uma selfie para conferência.',
             style: Theme.of(context).textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-
           Row(
             children: [
               Expanded(
@@ -390,7 +402,6 @@ class _CreateAccountState extends State<CreateAccount> {
             ],
           ),
           const SizedBox(height: 8),
-
           Text(
             'Dica: garanta boa iluminação e centralize o rosto/documento.',
             style: Theme.of(context).textTheme.bodySmall,
@@ -430,25 +441,25 @@ class _UploadTile extends StatelessWidget {
         child: Center(
           child: file == null
               ? Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.upload_file, size: 32),
-              const SizedBox(height: 8),
-              Text(label, style: Theme.of(context).textTheme.bodyMedium),
-              const SizedBox(height: 6),
-              Text('Toque para enviar',
-                  style: Theme.of(context).textTheme.bodySmall),
-            ],
-          )
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.upload_file, size: 32),
+                    const SizedBox(height: 8),
+                    Text(label, style: Theme.of(context).textTheme.bodyMedium),
+                    const SizedBox(height: 6),
+                    Text('Toque para enviar',
+                        style: Theme.of(context).textTheme.bodySmall),
+                  ],
+                )
               : ClipRRect(
-            borderRadius: borderRadius,
-            child: Image.file(
-              File(file!.path),
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-            ),
-          ),
+                  borderRadius: borderRadius,
+                  child: Image.file(
+                    File(file!.path),
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                ),
         ),
       ),
     );

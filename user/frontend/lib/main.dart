@@ -1,17 +1,26 @@
 import 'package:flutter/material.dart';
+<<<<<<< HEAD
 
 import 'theme/theme.dart';
+=======
+import 'startup.dart';
+>>>>>>> 046f9f9 (só pra dar pull)
 
 import 'models/user.dart';
 import 'models/vaccine.dart';
 import 'utils/hash_generator.dart';
+import 'utils/user_storage.dart';
 
 // Telas
-import 'screens/login_page.dart';
-import 'screens/create_account.dart';
 import 'screens/tab_navigation.dart';
+<<<<<<< HEAD
 import 'screens/vaccination_calendar.dart';
 import 'screens/user_qrcode.dart' as uq;
+=======
+import 'screens/vaccination_calendar.dart'; // ⬅️ ADICIONE ESTE
+// --- Use aliases para evitar conflitos ---
+import 'screens/user_qrcode.dart' as uq; // ⬅️ MANTENHA SÓ ESTE (com alias)
+>>>>>>> 046f9f9 (só pra dar pull)
 import 'screens/scan_health_center.dart' as shc;
 
 void main() => runApp(const VaccinationApp());
@@ -21,14 +30,16 @@ class VaccinationApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
+<<<<<<< HEAD
 
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
+=======
+>>>>>>> 046f9f9 (só pra dar pull)
       themeMode: ThemeMode.system,
-
-      home: const App(),
+      home: StartupFlow(),
     );
   }
 }
@@ -36,7 +47,8 @@ class VaccinationApp extends StatelessWidget {
 enum TabType { qr, calendario, historico, scanner }
 
 class App extends StatefulWidget {
-  const App({super.key});
+  final User? initialUser;
+  const App({super.key, this.initialUser});
 
   @override
   State<App> createState() => _AppState();
@@ -44,11 +56,12 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   bool isLoggedIn = false;
-  bool showCreateAccount = false;
 
   TabType activeTab = TabType.qr;
 
   User? user;
+
+  bool _attemptedLazyLoad = false;
 
   List<Vaccine> vaccines = [
     Vaccine(
@@ -89,32 +102,38 @@ class _AppState extends State<App> {
     ),
   ];
 
-  void handleLogin(User userData) {
-    setState(() {
-      user = userData;
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialUser != null) {
+      user = widget.initialUser;
       isLoggedIn = true;
-    });
+    }
   }
 
-  void handleCreateAccount(User userData) {
-    setState(() {
-      user = userData;
-      isLoggedIn = true;
-      showCreateAccount = false;
-    });
+  Future<void> _lazyLoadUser() async {
+    if (_attemptedLazyLoad) return;
+    _attemptedLazyLoad = true;
+    try {
+      final us = await UserStorage().load();
+      if (us != null && mounted) {
+        setState(() {
+          user = us;
+          isLoggedIn = true;
+        });
+      }
+    } catch (_) {
+      /* ignore */
+    }
   }
 
   void handleLogout() {
     setState(() {
       user = null;
       isLoggedIn = false;
-      showCreateAccount = false;
       activeTab = TabType.qr; // ✅ volta pra primeira aba
     });
   }
-
-  void showCreateAccountForm() => setState(() => showCreateAccount = true);
-  void backToLogin() => setState(() => showCreateAccount = false);
 
   void addVaccine({
     required String name,
@@ -144,15 +163,9 @@ class _AppState extends State<App> {
   @override
   Widget build(BuildContext context) {
     if (!isLoggedIn || user == null) {
-      if (showCreateAccount) {
-        return CreateAccount(
-          onCreateAccount: handleCreateAccount,
-          onBackToLogin: backToLogin,
-        );
-      }
-      return LoginPage(
-        onLogin: handleLogin,
-        onCreateAccount: showCreateAccountForm,
+      _lazyLoadUser();
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -160,7 +173,8 @@ class _AppState extends State<App> {
     Widget body;
     switch (activeTab) {
       case TabType.qr:
-        body = uq.UserQRCode(user: user!);   // usa o UserQRCode da pasta user_qrcode
+        body =
+            uq.UserQRCode(user: user!); // usa o UserQRCode da pasta user_qrcode
         break;
       case TabType.calendario:
         body = VaccinationCalendar(user: user!, vaccines: vaccines);
@@ -169,7 +183,8 @@ class _AppState extends State<App> {
         body = HistoricoPage(vaccines: vaccines);
         break;
       case TabType.scanner:
-        body = shc.ScanHealthCenter(        // usa o ScanHealthCenter da pasta scan_health_center
+        body = shc.ScanHealthCenter(
+          // usa o ScanHealthCenter da pasta scan_health_center
           user: user!,
           vaccines: vaccines,
           onAddVaccine: addVaccine,
@@ -210,7 +225,12 @@ class HistoricoPage extends StatelessWidget {
         return ListTile(
           leading: const Icon(Icons.history),
           title: Text(v.name),
+<<<<<<< HEAD
           subtitle: Text('Aplicada em ${v.date} • Lote ${v.batch}'),
+=======
+          subtitle:
+              Text('Aplicada em ${v.date} • Lote ${v.batch} • ${v.location}'),
+>>>>>>> 046f9f9 (só pra dar pull)
           trailing: const Icon(Icons.chevron_right),
         );
       },

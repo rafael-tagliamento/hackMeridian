@@ -45,7 +45,6 @@ class UserQRCode extends StatelessWidget {
     final payload = jsonEncode({
       'name': user.name,
       'cpf': user.cpf,
-      'email': user.email,
       'birthDate': user.birthDate,
     });
 

@@ -18,8 +18,9 @@ dependencies:
   image: ^4.1.7
   diacritic: ^0.1.5
   qr_flutter: ^4.1.0
+  stellar_flutter_sdk: ^2.1.4
   mobile_scanner: ^6.0.2   # (ou a mais recente estável)
-
+  crypto: ^3.0.3
 
 flutter:
   uses-material-design: true
