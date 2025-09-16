@@ -11,9 +11,9 @@ class VaccineItem {
 enum VaccineStatus { applied, pending, overdue }
 
 const List<VaccineItem> mockVaccines = [
-  // Aplicadas
+  // Applied
   VaccineItem(
-      name: 'COVID-19 (1ª dose)',
+      name: 'COVID-19 (1st dose)',
       date: '15/03/2024',
       status: VaccineStatus.applied),
   VaccineItem(
@@ -21,44 +21,47 @@ const List<VaccineItem> mockVaccines = [
       date: '10/04/2024',
       status: VaccineStatus.applied),
   VaccineItem(
-      name: 'Hepatite B (1ª dose)',
+      name: 'Hepatitis B (1st dose)',
       date: '22/02/2024',
       status: VaccineStatus.applied),
   VaccineItem(
-      name: 'Tétano (1ª dose)',
+      name: 'Tetanus (1st dose)',
       date: '05/01/2024',
       status: VaccineStatus.applied),
   VaccineItem(
-      name: 'Pneumocócica 13',
+      name: 'Pneumococcal 13',
       date: '18/12/2023',
       status: VaccineStatus.applied),
   VaccineItem(
-      name: 'Meningocócica ACWY',
+      name: 'Meningococcal ACWY',
       date: '25/11/2023',
       status: VaccineStatus.applied),
   VaccineItem(
-      name: 'HPV (1ª dose)', date: '08/10/2023', status: VaccineStatus.applied),
+      name: 'HPV (1st dose)',
+      date: '08/10/2023',
+      status: VaccineStatus.applied),
   VaccineItem(
-      name: 'Varicela (Catapora)',
+      name: 'Varicella (Chickenpox)',
       date: '12/09/2023',
       status: VaccineStatus.applied),
 
-  // Pendentes
-  VaccineItem(name: 'COVID-19 (2ª dose)', status: VaccineStatus.pending),
-  VaccineItem(name: 'Hepatite B (2ª dose)', status: VaccineStatus.pending),
-  VaccineItem(name: 'Tétano (reforço)', status: VaccineStatus.pending),
-  VaccineItem(name: 'HPV (2ª dose)', status: VaccineStatus.pending),
-  VaccineItem(name: 'Pneumocócica 23', status: VaccineStatus.pending),
+  // Pending
+  VaccineItem(name: 'COVID-19 (2nd dose)', status: VaccineStatus.pending),
+  VaccineItem(name: 'Hepatitis B (2nd dose)', status: VaccineStatus.pending),
+  VaccineItem(name: 'Tetanus (booster)', status: VaccineStatus.pending),
+  VaccineItem(name: 'HPV (2nd dose)', status: VaccineStatus.pending),
+  VaccineItem(name: 'Pneumococcal 23', status: VaccineStatus.pending),
   VaccineItem(name: 'Influenza 2025', status: VaccineStatus.pending),
-  VaccineItem(name: 'Hepatite A', status: VaccineStatus.pending),
-  VaccineItem(name: 'Tríplice Viral (Reforço)', status: VaccineStatus.pending),
+  VaccineItem(name: 'Hepatitis A', status: VaccineStatus.pending),
+  VaccineItem(name: 'MMR (Booster)', status: VaccineStatus.pending),
 
-  // Atrasadas
-  VaccineItem(name: 'Febre Amarela', status: VaccineStatus.overdue),
-  VaccineItem(name: 'COVID-19 (3ª dose)', status: VaccineStatus.overdue),
+  // Overdue
+  VaccineItem(name: 'Yellow Fever', status: VaccineStatus.overdue),
+  VaccineItem(name: 'COVID-19 (3rd dose)', status: VaccineStatus.overdue),
   VaccineItem(
-      name: 'dTpa (Tríplice Bacteriana)', status: VaccineStatus.overdue),
-  VaccineItem(name: 'Hepatite B (3ª dose)', status: VaccineStatus.overdue),
+      name: 'Tdap (Tetanus, Diphtheria, Pertussis)',
+      status: VaccineStatus.overdue),
+  VaccineItem(name: 'Hepatitis B (3rd dose)', status: VaccineStatus.overdue),
 ];
 
 class VaccinationLists extends StatelessWidget {
@@ -109,8 +112,8 @@ class VaccinationLists extends StatelessWidget {
         title: Text(vaccine.name,
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
         subtitle: vaccine.date != null
-            ? Text('Aplicada em: ${vaccine.date}',
-                style: const TextStyle(fontSize: 12))
+            ? Text('Applied on: ${vaccine.date}',
+            style: const TextStyle(fontSize: 12))
             : null,
       ),
     );
@@ -128,30 +131,30 @@ class VaccinationLists extends StatelessWidget {
         padding: const EdgeInsets.all(12.0),
         child: isWide
             ? Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                      child: _sectionCard(
-                          'Aplicadas', applied, VaccineStatus.applied)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                      child: _sectionCard(
-                          'Pendentes', pending, VaccineStatus.pending)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                      child: _sectionCard(
-                          'Atrasadas', overdue, VaccineStatus.overdue)),
-                ],
-              )
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+                child: _sectionCard(
+                    'Applied', applied, VaccineStatus.applied)),
+            const SizedBox(width: 12),
+            Expanded(
+                child: _sectionCard(
+                    'Pending', pending, VaccineStatus.pending)),
+            const SizedBox(width: 12),
+            Expanded(
+                child: _sectionCard(
+                    'Overdue', overdue, VaccineStatus.overdue)),
+          ],
+        )
             : Column(
-                children: [
-                  _sectionCard('Aplicadas', applied, VaccineStatus.applied),
-                  const SizedBox(height: 12),
-                  _sectionCard('Pendentes', pending, VaccineStatus.pending),
-                  const SizedBox(height: 12),
-                  _sectionCard('Atrasadas', overdue, VaccineStatus.overdue),
-                ],
-              ),
+          children: [
+            _sectionCard('Applied', applied, VaccineStatus.applied),
+            const SizedBox(height: 12),
+            _sectionCard('Pending', pending, VaccineStatus.pending),
+            const SizedBox(height: 12),
+            _sectionCard('Overdue', overdue, VaccineStatus.overdue),
+          ],
+        ),
       );
     });
   }
@@ -179,17 +182,17 @@ class VaccinationLists extends StatelessWidget {
               height: 220,
               child: items.isNotEmpty
                   ? ListView.builder(
-                      itemCount: items.length,
-                      itemBuilder: (context, i) =>
-                          _vaccineCard(context, items[i]),
-                    )
+                itemCount: items.length,
+                itemBuilder: (context, i) =>
+                    _vaccineCard(context, items[i]),
+              )
                   : Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24.0),
-                        child: Text('Nenhuma vacina ${title.toLowerCase()}',
-                            style: const TextStyle(color: Colors.grey)),
-                      ),
-                    ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24.0),
+                  child: Text('No vaccine ${title.toLowerCase()}',
+                      style: const TextStyle(color: Colors.grey)),
+                ),
+              ),
             ),
           ],
         ),

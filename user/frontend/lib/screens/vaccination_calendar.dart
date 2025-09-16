@@ -4,12 +4,14 @@ import '../models/vaccine.dart';
 
 class VaccinationCalendar extends StatefulWidget {
   final User user;
-  final List<Vaccine> vaccines;
+  final List<Vaccine> vaccinesproximas;
+  final List<Vaccine> vaccinesatrasadas;
 
   const VaccinationCalendar({
     super.key,
     required this.user,
-    required this.vaccines,
+    required this.vaccinesproximas,
+    required this.vaccinesatrasadas,
   });
 
   @override
@@ -18,8 +20,8 @@ class VaccinationCalendar extends StatefulWidget {
 
 class _VaccinationCalendarState extends State<VaccinationCalendar> {
   late final PageController _pageController;
-  final int _monthsToShow = 12; // 1 ano: mês atual + 11
-  int _currentPage = 0;        // 0 = mês atual
+  final int _monthsToShow = 12; // 1 year: current month + 11
+  int _currentPage = 0;        // 0 = current month
 
   @override
   void initState() {
@@ -33,7 +35,7 @@ class _VaccinationCalendarState extends State<VaccinationCalendar> {
     super.dispose();
   }
 
-  // ---------- Utilidades de data ----------
+  // ---------- Date utilities ----------
   DateTime _firstDayOfMonth(DateTime d) => DateTime(d.year, d.month, 1);
   DateTime _lastDayOfMonth(DateTime d) => DateTime(d.year, d.month + 1, 0);
 
@@ -51,13 +53,13 @@ class _VaccinationCalendarState extends State<VaccinationCalendar> {
     }
   }
 
-  // Mapa de dias -> lista de vacinas no dia (considera nextDose)
+  // Map of days -> list of vaccines on the day (considers nextDose)
   Map<DateTime, List<Vaccine>> _buildNextDoseIndex(DateTime month) {
     final first = _firstDayOfMonth(month);
     final last  = _lastDayOfMonth(month);
 
     final map = <DateTime, List<Vaccine>>{};
-    for (final v in widget.vaccines) {
+    for (final v in widget.vaccinesproximas) {
       final nd = _parse(v.nextDose);
       if (nd == null) continue;
       if (nd.isBefore(first) || nd.isAfter(last)) continue;
@@ -68,13 +70,13 @@ class _VaccinationCalendarState extends State<VaccinationCalendar> {
     return map;
   }
 
-  // Próximas vacinas (até +N meses) — aqui usamos 12
+  // Upcoming vaccines (up to +N months) — here we use 12
   List<Vaccine> _upcomingWithinMonths(int months) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final limit = DateTime(today.year, today.month + months, today.day);
     final list = <Vaccine>[];
-    for (final v in widget.vaccines) {
+    for (final v in widget.vaccinesproximas) {
       final nd0 = _parse(v.nextDose);
       if (nd0 == null) continue;
       final nd = DateTime(nd0.year, nd0.month, nd0.day);
@@ -84,12 +86,12 @@ class _VaccinationCalendarState extends State<VaccinationCalendar> {
     return list;
   }
 
-  // Atrasadas (nextDose < hoje)
+  // Overdue (nextDose < today)
   List<Vaccine> _overdue() {
     final now = DateTime.now();
     final list = <Vaccine>[];
     final today = DateTime(now.year, now.month, now.day);
-    for (final v in widget.vaccines) {
+    for (final v in widget.vaccinesatrasadas) {
       final nd = _parse(v.nextDose);
       if (nd == null) continue;
       final d = DateTime(nd.year, nd.month, nd.day);
@@ -102,7 +104,7 @@ class _VaccinationCalendarState extends State<VaccinationCalendar> {
   // ---------- UI ----------
   @override
   Widget build(BuildContext context) {
-    final upcoming = _upcomingWithinMonths(12); // próximos 12 meses
+    final upcoming = _upcomingWithinMonths(12); // next 12 months
     final overdue  = _overdue();
 
     return SingleChildScrollView(
@@ -111,41 +113,40 @@ class _VaccinationCalendarState extends State<VaccinationCalendar> {
         children: [
           _buildMonthHeader(),
           const SizedBox(height: 8),
-          _buildMonthPager(), // PageView horizontal com 12 meses (altura fixa)
+          _buildMonthPager(), // Horizontal PageView with 12 months (fixed height)
           const SizedBox(height: 16),
 
-          // Lista 1 — próximas vacinas (12 meses)
+          // List 1 — upcoming vaccines (12 months)
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Próximas vacinas (próximos 12 meses)',
+              'Upcoming vaccines (next 12 months)',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
           const SizedBox(height: 8),
           if (upcoming.isEmpty)
-            _empty('Sem próximas doses nos próximos 12 meses.')
+            _empty('No upcoming doses in the next 12 months.')
           else
             ListView.builder(
               shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(), // evita scroll dentro do scroll
               itemCount: upcoming.length,
               itemBuilder: (_, i) => _vaccineTile(upcoming[i]),
             ),
 
           const SizedBox(height: 16),
 
-          // Lista 2 — atrasadas (vermelho clarinho)
+          // List 2 — overdue (light red)
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Vacinas em atraso',
+              'Overdue vaccines',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
           const SizedBox(height: 8),
           if (overdue.isEmpty)
-            _empty('Nenhuma vacina em atraso. 🎉')
+            _empty('No overdue vaccines. 🎉')
           else
             ListView.builder(
               shrinkWrap: true,
@@ -167,8 +168,8 @@ class _VaccinationCalendarState extends State<VaccinationCalendar> {
 
   Widget _vaccineTile(Vaccine v) {
     final subtitle = [
-      if (v.nextDose != null) 'Próxima dose: ${v.nextDose}',
-      'Lote: ${v.batch}',
+      if (v.nextDose != null) 'Next dose: ${v.nextDose}',
+      'Batch: ${v.batch}',
     ].where((e) => e.isNotEmpty).join(' • ');
 
     return Card(
@@ -180,11 +181,11 @@ class _VaccinationCalendarState extends State<VaccinationCalendar> {
     );
   }
 
-  // Versão “em atraso” com vermelho clarinho
+  // Overdue version with light red
   Widget _overdueTile(Vaccine v) {
     final subtitle = [
-      'Em atraso desde: ${v.nextDose ?? '—'}',
-      'Lote: ${v.batch}',
+      'Overdue since: ${v.nextDose ?? '—'}',
+      'Batch: ${v.batch}',
     ].where((e) => e.isNotEmpty).join(' • ');
 
     return Card(
@@ -212,7 +213,7 @@ class _VaccinationCalendarState extends State<VaccinationCalendar> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         IconButton(
-          tooltip: 'Mês anterior',
+          tooltip: 'Previous month',
           onPressed: _currentPage > 0
               ? () => _animateToPage(_currentPage - 1)
               : null,
@@ -223,7 +224,7 @@ class _VaccinationCalendarState extends State<VaccinationCalendar> {
           style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
         ),
         IconButton(
-          tooltip: 'Próximo mês',
+          tooltip: 'Next month',
           onPressed: _currentPage < _monthsToShow - 1
               ? () => _animateToPage(_currentPage + 1)
               : null,
@@ -244,7 +245,7 @@ class _VaccinationCalendarState extends State<VaccinationCalendar> {
 
   Widget _buildMonthPager() {
     return SizedBox(
-      height: 370, // altura fixa confortável para 6 linhas + header dos dias
+      height: 370, // fixed height comfortable for 6 rows + day header
       child: PageView.builder(
         controller: _pageController,
         itemCount: _monthsToShow,
@@ -259,14 +260,14 @@ class _VaccinationCalendarState extends State<VaccinationCalendar> {
 
   String _monthYearLabel(DateTime d) {
     const months = [
-      'janeiro','fevereiro','março','abril','maio','junho',
-      'julho','agosto','setembro','outubro','novembro','dezembro'
+      'January','February','March','April','May','June',
+      'July','August','September','October','November','December'
     ];
-    return '${months[d.month - 1]} de ${d.year}';
+    return '${months[d.month - 1]} ${d.year}';
   }
 }
 
-// === Grade mensal ===
+// === Monthly grid ===
 class _MonthGrid extends StatelessWidget {
   final DateTime month;
   final Map<DateTime, List<Vaccine>> Function(DateTime) buildIndex;
@@ -284,7 +285,7 @@ class _MonthGrid extends StatelessWidget {
     final first = _firstDayOfMonth(month);
     final last  = _lastDayOfMonth(month);
 
-    final startWeekday = first.weekday % 7; // Dom=0, Seg=1, ... Sáb=6
+    final startWeekday = first.weekday % 7; // Sun=0, Mon=1, ... Sat=6
     final daysInMonth = last.day;
     final totalCells  = startWeekday + daysInMonth;
     final rows = (totalCells / 7).ceil();
@@ -299,7 +300,7 @@ class _MonthGrid extends StatelessWidget {
 
         Expanded(
           child: GridView.builder(
-            physics: const NeverScrollableScrollPhysics(), // grade fixa dentro da altura
+            physics: const NeverScrollableScrollPhysics(), // fixed grid inside height
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
               mainAxisSpacing: 6,
@@ -317,7 +318,7 @@ class _MonthGrid extends StatelessWidget {
               final hasVax = index.containsKey(key);
               return _DayCell(
                 day: dayNum,
-                marked: hasVax, // rosa quando tem vacina
+                marked: hasVax, // pink when there is a vaccine
                 vaccines: index[key] ?? const [],
               );
             },
@@ -328,7 +329,7 @@ class _MonthGrid extends StatelessWidget {
   }
 
   Widget _weekdayHeader() {
-    const labels = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']; // Dom..Sáb
+    const labels = ['S', 'M', 'T', 'W', 'T', 'F', 'S']; // Sun..Sat
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: labels
@@ -377,21 +378,21 @@ class _DayCell extends StatelessWidget {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: Text('Vacinas do dia $day'),
+            title: Text('Vaccines on day $day'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: vaccines
                   .map((v) => Padding(
                 padding: const EdgeInsets.only(bottom: 6),
-                child: Text('• ${v.name}  (próx: ${v.nextDose})'),
+                child: Text('• ${v.name}  (next: ${v.nextDose})'),
               ))
                   .toList(),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Fechar'),
+                child: const Text('Close'),
               )
             ],
           ),

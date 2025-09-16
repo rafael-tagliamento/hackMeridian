@@ -5,9 +5,9 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../services/stellar_crypto.dart';
 import '../utils/stellar.dart';
 
-/// Scanner genérico de QR que valida assinaturas Stellar no payload.
+/// Generic QR scanner that validates Stellar signatures in the payload.
 class ScanQRCode extends StatefulWidget {
-  /// Callback chamado quando os dados assinados forem verificados e aprovados.
+  /// Callback called when signed data has been verified and approved.
   final void Function(Map<String, dynamic> data)? onDataVerified;
 
   const ScanQRCode({
@@ -42,8 +42,8 @@ class _ScanQRCodeState extends State<ScanQRCode> {
     final raw = barcodes.first.rawValue;
     if (raw == null || raw.isEmpty) return;
 
-    _handled = true; // evita múltiplos diálogos
-    // Primeiro, tentamos decodificar JSON
+    _handled = true; // avoid multiple dialogs
+    // First, try to decode JSON
     dynamic parsed;
     try {
       parsed = jsonDecode(raw);
@@ -55,14 +55,14 @@ class _ScanQRCodeState extends State<ScanQRCode> {
 
     if (parsed == null) {
       await _showInfo(
-        title: 'QR lido (texto)',
+        title: 'QR read (text)',
         message: raw,
       );
       _handled = false;
       return;
     }
 
-    // Se for um objeto com data+signature, validamos a assinatura
+    // If it's an object with data+signature, validate the signature
     if (parsed is Map &&
         parsed.containsKey('data') &&
         parsed.containsKey('signature')) {
@@ -72,21 +72,21 @@ class _ScanQRCodeState extends State<ScanQRCode> {
       final valid = crypto.verifySignedJsonString(signedJson);
       if (!valid) {
         await _showInfo(
-            title: 'Assinatura inválida',
-            message: 'A assinatura do QR não pôde ser verificada.');
+            title: 'Invalid signature',
+            message: 'The QR signature could not be verified.');
         _handled = false;
         return;
       }
 
       final data = Map<String, dynamic>.from(parsed['data'] as Map);
-      // Mostrar visualização dos dados e pedir aprovação
+      // Show data preview and ask for approval
       final approved = await _showVerifiedDataAndConfirm(data);
       if (!mounted) return;
       if (approved == true) {
-        // Callback para o chamador com os dados verificados
+        // Callback to caller with verified data
         widget.onDataVerified?.call(data);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Dados verificados e aprovados.')),
+          const SnackBar(content: Text('Data verified and approved.')),
         );
         Navigator.of(context).maybePop();
       } else {
@@ -95,9 +95,9 @@ class _ScanQRCodeState extends State<ScanQRCode> {
       return;
     }
 
-    // Caso seja JSON mas não o formato assinado esperado, mostramos o conteúdo
+    // If JSON but not the expected signed format, show its content
     await _showInfo(
-      title: 'QR JSON lido',
+      title: 'QR JSON read',
       message: jsonEncode(parsed),
     );
     _handled = false;
@@ -113,7 +113,7 @@ class _ScanQRCodeState extends State<ScanQRCode> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Fechar'),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -129,49 +129,47 @@ class _ScanQRCodeState extends State<ScanQRCode> {
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Dados verificados'),
+        title: const Text('Verified data'),
         content: SingleChildScrollView(child: Text(sb.toString())),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Rejeitar'),
+            child: const Text('Reject'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Aprovar'),
+            child: const Text('Approve'),
           ),
         ],
       ),
     );
   }
 
-  // método _confirmAdd removido — fluxo específico de vacinação não é mais necessário
-
-  /// 🔹 novo: diálogo de ajuda
+  /// 🔹 new: help dialog
   void _showHelp() {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Como funciona o escaneamento'),
+        title: const Text('How scanning works'),
         content: const SingleChildScrollView(
           child: Text(
-            '1) Aponte a câmera para o QR do paciente/registro.\n'
-            '2) Ao reconhecer, o app tenta ler o conteúdo como JSON.\n'
-            '3) Se o JSON tiver assinatura válida, você poderá visualizar e aprovar os dados.\n\n'
-            'Formato esperado:\n'
-            '• JSON com campos de dados dentro de "data" e uma string "signature" (Base64).\n\n'
-            'Dicas:\n'
-            '• Ative o flash se o ambiente estiver escuro.\n'
-            '• Aproxime ou afaste para o QR ficar nítido dentro da moldura.\n'
-            '• Se ler texto comum (não-JSON), o app mostra o texto lido.\n\n'
-            'Privacidade:\n'
-            '• O conteúdo lido é usado somente para preencher os campos e não é enviado para servidores.',
+            '1) Point the camera at the patient/record QR.\n'
+                '2) When recognized, the app tries to read the content as JSON.\n'
+                '3) If the JSON has a valid signature, you can view and approve the data.\n\n'
+                'Expected format:\n'
+                '• JSON with fields inside "data" and a string "signature" (Base64).\n\n'
+                'Tips:\n'
+                '• Turn on the flash if the environment is dark.\n'
+                '• Move closer or further so the QR is sharp inside the frame.\n'
+                '• If plain text (non-JSON) is read, the app shows the raw text.\n\n'
+                'Privacy:\n'
+                '• The scanned content is only used to fill the fields and is not sent to servers.',
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Entendi'),
+            child: const Text('Got it'),
           ),
         ],
       ),
@@ -180,15 +178,15 @@ class _ScanQRCodeState extends State<ScanQRCode> {
 
   @override
   Widget build(BuildContext context) {
-    // UI simples: câmera + moldura + controles (ajuda / flash / trocar câmera)
+    // Simple UI: camera + frame + controls (help / flash / switch camera)
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Escanear Carteira'),
+        title: const Text('Scan Wallet'),
         actions: [
           IconButton(
-            onPressed: _showHelp, // ⬅️ botão de ajuda
+            onPressed: _showHelp, // ⬅️ help button
             icon: const Icon(Icons.help_outline),
-            tooltip: 'Ajuda',
+            tooltip: 'Help',
           ),
           IconButton(
             onPressed: () => _controller.toggleTorch(),
@@ -198,7 +196,7 @@ class _ScanQRCodeState extends State<ScanQRCode> {
           IconButton(
             onPressed: () => _controller.switchCamera(),
             icon: const Icon(Icons.cameraswitch),
-            tooltip: 'Trocar câmera',
+            tooltip: 'Switch camera',
           ),
         ],
       ),
@@ -224,7 +222,7 @@ class _ScanQRCodeState extends State<ScanQRCode> {
               ),
             ),
           ),
-          // Dica fixa
+          // Fixed tip
           Positioned(
             left: 16,
             right: 16,
@@ -236,8 +234,8 @@ class _ScanQRCodeState extends State<ScanQRCode> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Text(
-                'Aponte a câmera para o QR.\n'
-                'Ao reconhecer um QR válido, será exibida a confirmação para adicionar.',
+                'Point the camera at the QR.\n'
+                    'When a valid QR is recognized, a confirmation to add will be shown.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white),
               ),

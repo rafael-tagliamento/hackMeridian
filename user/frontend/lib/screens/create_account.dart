@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 import '../models/user.dart';
 import '../utils/local_doc_selfie_verifier.dart'; // << novo import
 import '../utils/stellar.dart';
 import '../utils/security_service.dart';
 import '../utils/user_storage.dart';
-import '../widgets/pin_input_boxes.dart';
 
 /// ---------------------------------------------------------------------------
 /// TELA: Criação de conta em 2 etapas
@@ -35,6 +35,9 @@ class _CreateAccountState extends State<CreateAccount> {
   final cpf = TextEditingController();
   final birth = TextEditingController();
   final pin = TextEditingController();
+
+  // Mostrar/ocultar PIN
+  bool _pinObscured = true;
 
   // Picked images
   final ImagePicker _picker = ImagePicker();
@@ -91,15 +94,17 @@ class _CreateAccountState extends State<CreateAccount> {
 
   bool _validateStep1() {
     final errors = <String>[];
-    if (name.text.trim().isEmpty) errors.add('Nome');
-    if (cpf.text.trim().isEmpty) errors.add('CPF');
-    if (birth.text.trim().isEmpty) errors.add('Data de Nascimento');
+    if (name.text.trim().isEmpty) errors.add('Name');
+    if (cpf.text.trim().isEmpty) errors.add('Document (CPF)');
+    if (birth.text.trim().isEmpty) errors.add('Date of Birth');
+
     final p = pin.text.trim();
-    if (p.isEmpty || p.length < 4 || p.length > 6) {
-      errors.add('PIN (4 a 6 dígitos)');
+    if (!RegExp(r'^\d{4,6}$').hasMatch(p)) {
+      errors.add('PIN (4-6 numeric digits)');
     }
+
     if (errors.isNotEmpty) {
-      _showSnack('Preencha: ${errors.join(', ')}');
+      _showSnack('Fill in: ${errors.join(', ')}');
       return false;
     }
     return true;
@@ -125,12 +130,12 @@ class _CreateAccountState extends State<CreateAccount> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_camera),
-              title: const Text('Usar câmera'),
+              title: const Text('Use camera'),
               onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title: const Text('Escolher da galeria'),
+              title: const Text('Choose from gallery'),
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
           ],
@@ -144,7 +149,7 @@ class _CreateAccountState extends State<CreateAccount> {
     final x = await _picker.pickImage(
       source: source,
       preferredCameraDevice:
-          preferFrontCamera ? CameraDevice.front : CameraDevice.rear,
+      preferFrontCamera ? CameraDevice.front : CameraDevice.rear,
       imageQuality: 85, // reduz tamanho → OCR mais estável/perf
     );
     return x;
@@ -154,7 +159,7 @@ class _CreateAccountState extends State<CreateAccount> {
   Future<void> _finishAndCreate() async {
     // Durante desenvolvimento: permitir criar conta mesmo sem imagens.
     if (_requireImages && (_docImage == null || _selfieImage == null)) {
-      _showSnack('Envie a foto do documento e a selfie.');
+      _showSnack('Upload a photo of your document and a selfie.');
       return;
     }
 
@@ -167,7 +172,7 @@ class _CreateAccountState extends State<CreateAccount> {
       bool bioOk = false;
       if (isSupported && canCheck && types.isNotEmpty) {
         bioOk = await _auth.authenticate(
-          localizedReason: 'Confirme sua identidade',
+          localizedReason: 'Confirm your identity',
           options: const AuthenticationOptions(
             biometricOnly: true,
             stickyAuth: true,
@@ -178,7 +183,7 @@ class _CreateAccountState extends State<CreateAccount> {
         bioOk = true;
       }
       if (!bioOk) {
-        _showSnack('Autenticação biométrica não confirmada.');
+        _showSnack('Biometric authentication unsuccessful.');
         return;
       }
       bool faceOk = true;
@@ -191,7 +196,7 @@ class _CreateAccountState extends State<CreateAccount> {
           expectedBirthDate: birth.text,
         );
         if (!faceOk) {
-          _showSnack('Não foi possível confirmar documento vs selfie.');
+          _showSnack('Could not confirm document vs. selfie.');
           return;
         }
       }
@@ -203,14 +208,16 @@ class _CreateAccountState extends State<CreateAccount> {
       await stellar.friendBotIfNeeded();
       _seedShown = kp.secretSeed; // exibir uma vez
       final user = User(
-          name: name.text.trim(),
-          birthDate: birth.text.trim(),
-          cpf: cpf.text.trim(),
-          publicKey: kp.accountId);
+        name: name.text.trim(),
+        birthDate: birth.text.trim(),
+        cpf: cpf.text.trim(),
+        publicKey: kp.accountId,
+      );
       await _userStorage.save(user);
       debugPrint('[CreateAccount] user saved to storage');
       await _security!.markTrusted();
       debugPrint('[CreateAccount] marked device trusted');
+
       // Mostra seed em diálogo antes de concluir
       // ignore: use_build_context_synchronously
       await showDialog(
@@ -218,12 +225,12 @@ class _CreateAccountState extends State<CreateAccount> {
         barrierDismissible: false,
         builder: (ctx) {
           return AlertDialog(
-            title: const Text('Backup da Seed'),
+            title: const Text('Seed Phrase Backup'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                    'Anote e guarde sua seed. Ela não será mostrada novamente.'),
+                    'Write down and save your seed. It will not be shown again.'),
                 const SizedBox(height: 12),
                 SelectableText(
                   _seedShown!,
@@ -234,7 +241,7 @@ class _CreateAccountState extends State<CreateAccount> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Já anotei'),
+                child: const Text('Noted'),
               )
             ],
           );
@@ -245,7 +252,7 @@ class _CreateAccountState extends State<CreateAccount> {
     } catch (e, st) {
       debugPrint('[CreateAccount] finish error: $e');
       debugPrint('$st');
-      _showSnack('Erro ao concluir: $e');
+      _showSnack('Failed to complete:$e');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -261,7 +268,7 @@ class _CreateAccountState extends State<CreateAccount> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_step == 0 ? 'Criar conta (1/2)' : 'Criar conta (2/2)'),
+        title: Text(_step == 0 ? 'Create account (1/2)' : 'Create account (1/2)'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: _busy ? null : _goBack,
@@ -292,24 +299,24 @@ class _CreateAccountState extends State<CreateAccount> {
               if (_step == 1)
                 OutlinedButton(
                   onPressed: _busy ? null : () => setState(() => _step = 0),
-                  child: const Text('Voltar'),
+                  child: const Text('Return'),
                 ),
               const Spacer(),
               if (_step == 0)
                 FilledButton(
                   onPressed: _busy ? null : _goNext,
-                  child: const Text('Próxima etapa'),
+                  child: const Text('Next Step'),
                 ),
               if (_step == 1)
                 FilledButton(
                   onPressed: _busy ? null : _finishAndCreate,
                   child: _busy
                       ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Concluir e criar conta'),
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                      : const Text('Complete and create account'),
                 ),
             ],
           ),
@@ -329,13 +336,13 @@ class _CreateAccountState extends State<CreateAccount> {
           const SizedBox(height: 24),
           TextField(
             controller: name,
-            decoration: const InputDecoration(labelText: 'Nome completo'),
+            decoration: const InputDecoration(labelText: 'Name'),
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 16),
           TextField(
             controller: cpf,
-            decoration: const InputDecoration(labelText: 'CPF'),
+            decoration: const InputDecoration(labelText: 'Document (CPF)'),
             keyboardType: TextInputType.number,
             textInputAction: TextInputAction.next,
           ),
@@ -343,25 +350,30 @@ class _CreateAccountState extends State<CreateAccount> {
           TextField(
             controller: birth,
             decoration: const InputDecoration(
-              labelText: 'Data de Nascimento (yyyy-MM-dd)',
+              labelText: 'Date of Birth (yyyy-MM-dd)',
             ),
             keyboardType: TextInputType.datetime,
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 16),
-          // PIN com 6 quadradinhos
-          SizedBox(
-              height: 72,
-              child: Center(
-                  child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: PinInputBoxes(
-                  length: 6,
-                  controller: pin,
-                  obscure: true,
-                  onChanged: (s) {},
-                ),
-              ))),
+
+          // PIN como TextField normal (4 a 6 dígitos)
+          TextField(
+            controller: pin,
+            decoration: InputDecoration(
+              labelText: 'PIN (4-6 digits)',
+              counterText: '', // oculta contador
+              suffixIcon: IconButton(
+                onPressed: () => setState(() => _pinObscured = !_pinObscured),
+                icon: Icon(_pinObscured ? Icons.visibility_off : Icons.visibility),
+                tooltip: _pinObscured ? 'Show PIN' : 'Hide PIN',
+              ),
+            ),
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.done,
+            obscureText: _pinObscured,
+            maxLength: 6
+          ),
         ],
       ),
     );
@@ -376,13 +388,13 @@ class _CreateAccountState extends State<CreateAccount> {
           Image.asset('assets/logo.png', height: 70),
           const SizedBox(height: 16),
           Text(
-            'Verificação de identidade',
+            'Identity verification',
             style: Theme.of(context).textTheme.titleLarge,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
           Text(
-            'Envie a foto do documento e uma selfie para conferência.',
+            'Upload a photo of your document and a selfie for us to check.',
             style: Theme.of(context).textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
@@ -391,7 +403,7 @@ class _CreateAccountState extends State<CreateAccount> {
             children: [
               Expanded(
                 child: _UploadTile(
-                  label: 'Documento (frente)',
+                  label: 'Document (front)',
                   file: _docImage,
                   onPick: _pickDocImage,
                 ),
@@ -408,7 +420,7 @@ class _CreateAccountState extends State<CreateAccount> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Dica: garanta boa iluminação e centralize o rosto/documento.',
+            'Tip: Ensure good lighting and center your face/document.',
             style: Theme.of(context).textTheme.bodySmall,
             textAlign: TextAlign.center,
           ),
@@ -446,25 +458,25 @@ class _UploadTile extends StatelessWidget {
         child: Center(
           child: file == null
               ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.upload_file, size: 32),
-                    const SizedBox(height: 8),
-                    Text(label, style: Theme.of(context).textTheme.bodyMedium),
-                    const SizedBox(height: 6),
-                    Text('Toque para enviar',
-                        style: Theme.of(context).textTheme.bodySmall),
-                  ],
-                )
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.upload_file, size: 32),
+              const SizedBox(height: 8),
+              Text(label, style: Theme.of(context).textTheme.bodyMedium),
+              const SizedBox(height: 6),
+              Text('Send',
+                  style: Theme.of(context).textTheme.bodySmall),
+            ],
+          )
               : ClipRRect(
-                  borderRadius: borderRadius,
-                  child: Image.file(
-                    File(file!.path),
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
-                  ),
-                ),
+            borderRadius: borderRadius,
+            child: Image.file(
+              File(file!.path),
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+            ),
+          ),
         ),
       ),
     );

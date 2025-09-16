@@ -27,11 +27,11 @@ class TabNavigation extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Olá, ${user.name.split(' ').first}!'),
+        title: Text('Hello, ${user.name.split(' ').first}!'),
         actions: [
           IconButton(
             onPressed: onLogout,
-            tooltip: 'Sair',
+            tooltip: 'Logout',
             icon: const Icon(Icons.logout),
           ),
         ],
@@ -45,8 +45,8 @@ class TabNavigation extends StatelessWidget {
         onDestinationSelected: (i) => onTabChange(TabType.values[i]),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.qr_code), label: 'QR Code'),
-          NavigationDestination(icon: Icon(Icons.event), label: 'Calendário'),
-          NavigationDestination(icon: Icon(Icons.history), label: 'Histórico'), // 👈 nova aba
+          NavigationDestination(icon: Icon(Icons.event), label: 'Calendar'),
+          NavigationDestination(icon: Icon(Icons.history), label: 'History'), // 👈 new tab
           NavigationDestination(icon: Icon(Icons.add_a_photo), label: 'Scanner'),
         ],
       ),

@@ -7,7 +7,7 @@ import '../utils/stellar.dart';
 class UserQRCode extends StatelessWidget {
   final User user;
 
-  // Paleta fixa (suas cores)
+  // Fixed palette (your colors)
   static const Color _roxoEscuro = Color(0xff553b71);
   static const Color _branco = Color(0xfff9f1f9);
 
@@ -15,12 +15,12 @@ class UserQRCode extends StatelessWidget {
   final Color moduleColor;
   final Color eyeColor;
 
-  // Logo (fora do card, mais pra cima)
+  // Logo (outside the card, placed higher)
   final String logoAsset;
   final double logoWidth;
   final double logoTopPadding;
 
-  // Espaçamentos
+  // Spacings
   final double titleGap;
   final double logoTitleGap;
 
@@ -39,19 +39,19 @@ class UserQRCode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Monta os dados que serão assinados
+    // Build the data to be signed
     final data = {
       'name': user.name,
       'cpf': user.cpf,
       'publicKey': user.publicKey,
     };
 
-    // nota: operação assíncrona; usamos FutureBuilder para obter o payload assinado
+    // note: asynchronous operation; we use FutureBuilder to get the signed payload
     final keyManager = StellarKeyManager();
     final crypto = StellarCrypto(keyManager);
 
     return Container(
-      // Fundo da tela com sua paleta (lilás → branco)
+      // Screen background with your palette (lilac → white)
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -68,7 +68,7 @@ class UserQRCode extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // LOGO — fora do card, mais pra cima
+                  // LOGO — outside the card, placed higher
                   SizedBox(height: logoTopPadding),
                   Center(
                     child: Image.asset(
@@ -86,16 +86,16 @@ class UserQRCode extends StatelessWidget {
                       spacing: 8,
                       children: [
                         Text(
-                          'Identidade do Usuário',
+                          'User Identity',
                           textAlign: TextAlign.center,
                           style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: _roxoEscuro,
-                                  ),
+                          Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: _roxoEscuro,
+                          ),
                         ),
                         IconButton(
-                          tooltip: 'Ajuda',
+                          tooltip: 'Help',
                           icon: const Icon(Icons.help_outline),
                           color: _roxoEscuro,
                           onPressed: () => _showHelp(context),
@@ -106,7 +106,7 @@ class UserQRCode extends StatelessWidget {
 
                   SizedBox(height: titleGap),
 
-                  // CARD + QR — card tem a mesma cor do fundo do QR
+                  // CARD + QR — card has the same color as the QR background
                   Card(
                     color: backgroundColor,
                     elevation: 2,
@@ -118,7 +118,7 @@ class UserQRCode extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // QR centralizado — aguardamos o payload assinado
+                          // Centered QR — waits for the signed payload
                           FutureBuilder<String>(
                             future: crypto.signMapAsJson(data),
                             builder: (ctx, snap) {
@@ -134,7 +134,7 @@ class UserQRCode extends StatelessWidget {
                                 return SizedBox(
                                   height: 240,
                                   child:
-                                      Center(child: Text('Erro ao gerar QR')),
+                                  Center(child: Text('Error generating QR')),
                                 );
                               }
                               final signedPayload = snap.data!;
@@ -173,16 +173,16 @@ class UserQRCode extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: _branco,
-        title: const Text('O que é este QR Code?'),
+        title: const Text('What is this QR Code?'),
         content: const Text(
-          'Este QR Code representa sua “Identidade do Usuário”: nome, CPF, e-mail e data de nascimento, '
-          'codificados em JSON para leitura rápida por apps autorizados.\n\n'
-          'Privacidade: o conteúdo não é criptografado. Compartilhe apenas com serviços confiáveis.',
+          'This QR Code represents your "User Identity": name, CPF, email, and date of birth, '
+              'encoded in JSON for quick reading by authorized apps.\n\n'
+              'Privacy: the content is not encrypted. Share only with trusted services.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Entendi'),
+            child: const Text('Got it'),
           ),
         ],
       ),
