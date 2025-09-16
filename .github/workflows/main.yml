@@ -56,7 +56,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3 # Alterado para v3, a mais recente na época da resposta
         with:
           # Corrigido o caminho para a pasta de build
-          path: './admin_web/dist' 
+          path: './admin_web/build' 
       
       - name: Deploy to GitHub Pages
         id: deployment
