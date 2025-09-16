@@ -73,7 +73,7 @@ class UserQRCode extends StatelessWidget {
                   Center(
                     child: Image.asset(
                       logoAsset,
-                      width: 400,
+                      width: logoWidth,
                       fit: BoxFit.contain,
                     ),
                   ),
