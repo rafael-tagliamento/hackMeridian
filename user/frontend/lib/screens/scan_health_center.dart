@@ -2,32 +2,24 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import '../models/user.dart';
-import '../models/vaccine.dart';
+import '../services/stellar_crypto.dart';
+import '../utils/stellar.dart';
 
-class ScanHealthCenter extends StatefulWidget {
-  final User user;
-  final List<Vaccine> vaccines;
+/// Scanner genérico de QR que valida assinaturas Stellar no payload.
+class ScanQRCode extends StatefulWidget {
+  /// Callback chamado quando os dados assinados forem verificados e aprovados.
+  final void Function(Map<String, dynamic> data)? onDataVerified;
 
-  final void Function({
-  required String name,
-  required String date,
-  String? nextDose,
-  required String batch,
-  }) onAddVaccine;
-
-  const ScanHealthCenter({
+  const ScanQRCode({
     super.key,
-    required this.user,
-    required this.vaccines,
-    required this.onAddVaccine,
+    this.onDataVerified,
   });
 
   @override
-  State<ScanHealthCenter> createState() => _ScanHealthCenterState();
+  State<ScanQRCode> createState() => _ScanQRCodeState();
 }
 
-class _ScanHealthCenterState extends State<ScanHealthCenter> {
+class _ScanQRCodeState extends State<ScanQRCode> {
   final MobileScannerController _controller = MobileScannerController(
     detectionSpeed: DetectionSpeed.noDuplicates,
     facing: CameraFacing.back,
@@ -51,17 +43,17 @@ class _ScanHealthCenterState extends State<ScanHealthCenter> {
     if (raw == null || raw.isEmpty) return;
 
     _handled = true; // evita múltiplos diálogos
-
-    Map<String, dynamic>? data;
+    // Primeiro, tentamos decodificar JSON
+    dynamic parsed;
     try {
-      data = jsonDecode(raw) as Map<String, dynamic>;
+      parsed = jsonDecode(raw);
     } catch (_) {
-      data = null;
+      parsed = null;
     }
 
     if (!mounted) return;
 
-    if (data == null) {
+    if (parsed == null) {
       await _showInfo(
         title: 'QR lido (texto)',
         message: raw,
@@ -70,64 +62,49 @@ class _ScanHealthCenterState extends State<ScanHealthCenter> {
       return;
     }
 
-    // Extrai campos esperados
-    final name = (data['name'] ?? '').toString();
-    final date = (data['date'] ?? '').toString();
-    final nextDose = (data['nextDose']?.toString().isEmpty ?? true)
-        ? null
-        : data['nextDose'].toString();
-    final batch = (data['batch'] ?? '').toString();
-    final location = (data['location'] ?? '').toString();
-    final doctor = (data['doctor'] ?? '').toString();
+    // Se for um objeto com data+signature, validamos a assinatura
+    if (parsed is Map &&
+        parsed.containsKey('data') &&
+        parsed.containsKey('signature')) {
+      final keyManager = StellarKeyManager();
+      final crypto = StellarCrypto(keyManager);
+      final signedJson = raw;
+      final valid = crypto.verifySignedJsonString(signedJson);
+      if (!valid) {
+        await _showInfo(
+            title: 'Assinatura inválida',
+            message: 'A assinatura do QR não pôde ser verificada.');
+        _handled = false;
+        return;
+      }
 
-    // Validação mínima
-    final camposFaltantes = <String>[];
-    if (name.isEmpty) camposFaltantes.add('name');
-    if (date.isEmpty) camposFaltantes.add('date');
-    if (batch.isEmpty) camposFaltantes.add('batch');
-    if (location.isEmpty) camposFaltantes.add('location');
-    if (doctor.isEmpty) camposFaltantes.add('doctor');
-
-    if (camposFaltantes.isNotEmpty) {
-      await _showInfo(
-        title: 'QR inválido',
-        message:
-        'Faltam campos: ${camposFaltantes.join(', ')}.\n\nConteúdo lido:\n$raw',
-      );
-      _handled = false;
+      final data = Map<String, dynamic>.from(parsed['data'] as Map);
+      // Mostrar visualização dos dados e pedir aprovação
+      final approved = await _showVerifiedDataAndConfirm(data);
+      if (!mounted) return;
+      if (approved == true) {
+        // Callback para o chamador com os dados verificados
+        widget.onDataVerified?.call(data);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Dados verificados e aprovados.')),
+        );
+        Navigator.of(context).maybePop();
+      } else {
+        _handled = false;
+      }
       return;
     }
 
-    // Confirmação para adicionar
-    final ok = await _confirmAdd(
-      name: name,
-      date: date,
-      nextDose: nextDose,
-      batch: batch,
-      location: location,
-      doctor: doctor,
+    // Caso seja JSON mas não o formato assinado esperado, mostramos o conteúdo
+    await _showInfo(
+      title: 'QR JSON lido',
+      message: jsonEncode(parsed),
     );
-
-    if (!mounted) return;
-
-    if (ok == true) {
-      widget.onAddVaccine(
-        name: name,
-        date: date,
-        nextDose: nextDose,
-        batch: batch,
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Vacina “$name” adicionada com sucesso!')),
-      );
-      Navigator.of(context).maybePop(); // volta uma tela (opcional)
-    } else {
-      _handled = false; // pode tentar outro QR
-    }
+    _handled = false;
   }
 
-  Future<void> _showInfo({required String title, required String message}) async {
+  Future<void> _showInfo(
+      {required String title, required String message}) async {
     return showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -143,40 +120,32 @@ class _ScanHealthCenterState extends State<ScanHealthCenter> {
     );
   }
 
-  Future<bool?> _confirmAdd({
-    required String name,
-    required String date,
-    String? nextDose,
-    required String batch,
-    required String location,
-    required String doctor,
-  }) async {
-    final sb = StringBuffer()
-      ..writeln('Nome: $name')
-      ..writeln('Data: $date')
-      ..writeln('Próxima dose: ${nextDose ?? '—'}')
-      ..writeln('Lote: $batch')
-      ..writeln('Local: $location')
-      ..writeln('Profissional: $doctor');
+  Future<bool?> _showVerifiedDataAndConfirm(Map<String, dynamic> data) async {
+    final sb = StringBuffer();
+    data.forEach((k, v) {
+      sb.writeln('$k: $v');
+    });
 
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Adicionar esta aplicação?'),
-        content: Text(sb.toString()),
+        title: const Text('Dados verificados'),
+        content: SingleChildScrollView(child: Text(sb.toString())),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
+            child: const Text('Rejeitar'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Adicionar'),
+            child: const Text('Aprovar'),
           ),
         ],
       ),
     );
   }
+
+  // método _confirmAdd removido — fluxo específico de vacinação não é mais necessário
 
   /// 🔹 novo: diálogo de ajuda
   void _showHelp() {
@@ -187,30 +156,16 @@ class _ScanHealthCenterState extends State<ScanHealthCenter> {
         content: const SingleChildScrollView(
           child: Text(
             '1) Aponte a câmera para o QR do paciente/registro.\n'
-                '2) Ao reconhecer, o app tenta ler o conteúdo como JSON.\n'
-                '3) Se o JSON tiver os campos obrigatórios, você confirma e a aplicação é adicionada.\n\n'
-                'Campos esperados no QR:\n'
-                '• name (nome da vacina)\n'
-                '• date (data da aplicação)\n'
-                '• batch (lote)\n'
-                '• location (local da aplicação)\n'
-                '• doctor (profissional)\n'
-                '• nextDose (opcional)\n\n'
-                'Exemplo de QR (JSON):\n'
-                '{\n'
-                '  "name": "COVID-19 (Pfizer)",\n'
-                '  "date": "2024-12-20",\n'
-                '  "nextDose": "2025-06-20",\n'
-                '  "batch": "PF001234",\n'
-                '  "location": "UBS Centro",\n'
-                '  "doctor": "Dra. Ana"\n'
-                '}\n\n'
-                'Dicas:\n'
-                '• Ative o flash se o ambiente estiver escuro.\n'
-                '• Aproxime ou afaste para o QR ficar nítido dentro da moldura.\n'
-                '• Se ler texto comum (não-JSON), o app mostra o texto lido.\n\n'
-                'Privacidade:\n'
-                '• O conteúdo lido é usado somente para preencher os campos e não é enviado para servidores.',
+            '2) Ao reconhecer, o app tenta ler o conteúdo como JSON.\n'
+            '3) Se o JSON tiver assinatura válida, você poderá visualizar e aprovar os dados.\n\n'
+            'Formato esperado:\n'
+            '• JSON com campos de dados dentro de "data" e uma string "signature" (Base64).\n\n'
+            'Dicas:\n'
+            '• Ative o flash se o ambiente estiver escuro.\n'
+            '• Aproxime ou afaste para o QR ficar nítido dentro da moldura.\n'
+            '• Se ler texto comum (não-JSON), o app mostra o texto lido.\n\n'
+            'Privacidade:\n'
+            '• O conteúdo lido é usado somente para preencher os campos e não é enviado para servidores.',
           ),
         ),
         actions: [
@@ -231,7 +186,7 @@ class _ScanHealthCenterState extends State<ScanHealthCenter> {
         title: const Text('Escanear Carteira'),
         actions: [
           IconButton(
-            onPressed: _showHelp,                 // ⬅️ botão de ajuda
+            onPressed: _showHelp, // ⬅️ botão de ajuda
             icon: const Icon(Icons.help_outline),
             tooltip: 'Ajuda',
           ),
@@ -282,7 +237,7 @@ class _ScanHealthCenterState extends State<ScanHealthCenter> {
               ),
               child: const Text(
                 'Aponte a câmera para o QR.\n'
-                    'Ao reconhecer um QR válido, será exibida a confirmação para adicionar.',
+                'Ao reconhecer um QR válido, será exibida a confirmação para adicionar.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white),
               ),

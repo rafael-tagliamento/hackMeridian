@@ -223,11 +223,15 @@ class _AppState extends State<App> {
         body = HistoricoPage(vaccines: vaccines);
         break;
       case TabType.scanner:
-        body = shc.ScanHealthCenter(
-          // usa o ScanHealthCenter da pasta scan_health_center
-          user: user!,
-          vaccines: vaccines,
-          onAddVaccine: addVaccine,
+        body = shc.ScanQRCode(
+          // scanner genérico que valida assinaturas Stellar
+          onDataVerified: (data) {
+            // Exemplo: aqui você poderia processar os dados aprovados
+            // atualmente apenas mostra uma snackbar
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Dados aprovados pelo scanner')),
+            );
+          },
         );
         break;
     }

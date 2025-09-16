@@ -1,17 +1,15 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../models/user.dart';
+import '../services/stellar_crypto.dart';
+import '../utils/stellar.dart';
 
 class UserQRCode extends StatelessWidget {
   final User user;
 
   // Paleta fixa (suas cores)
-  static const Color _lilasClaro = Color(0xffd9bafa);
   static const Color _roxoEscuro = Color(0xff553b71);
-  static const Color _roxoMedio  = Color(0xff6d538b);
-  static const Color _preto      = Colors.black;
-  static const Color _branco     = Color(0xfff9f1f9);
+  static const Color _branco = Color(0xfff9f1f9);
 
   final Color backgroundColor;
   final Color moduleColor;
@@ -29,24 +27,28 @@ class UserQRCode extends StatelessWidget {
   const UserQRCode({
     super.key,
     required this.user,
-
     this.backgroundColor = _roxoEscuro,
-    this.moduleColor     = _branco,
-    this.eyeColor        = _branco,
-    this.logoAsset       = 'assets/logoroxo2.png',
-    this.logoWidth       = 120,
-    this.logoTopPadding  = 1,
-    this.titleGap        = 16,
-    this.logoTitleGap    = 10,
+    this.moduleColor = _branco,
+    this.eyeColor = _branco,
+    this.logoAsset = 'assets/logoroxo2.png',
+    this.logoWidth = 120,
+    this.logoTopPadding = 1,
+    this.titleGap = 16,
+    this.logoTitleGap = 10,
   });
 
   @override
   Widget build(BuildContext context) {
-    final payload = jsonEncode({
+    // Monta os dados que serão assinados
+    final data = {
       'name': user.name,
       'cpf': user.cpf,
-      'birthDate': user.birthDate,
-    });
+      'publicKey': user.publicKey,
+    };
+
+    // nota: operação assíncrona; usamos FutureBuilder para obter o payload assinado
+    final keyManager = StellarKeyManager();
+    final crypto = StellarCrypto(keyManager);
 
     return Container(
       // Fundo da tela com sua paleta (lilás → branco)
@@ -86,10 +88,11 @@ class UserQRCode extends StatelessWidget {
                         Text(
                           'Identidade do Usuário',
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: _roxoEscuro,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: _roxoEscuro,
+                                  ),
                         ),
                         IconButton(
                           tooltip: 'Ajuda',
@@ -115,21 +118,42 @@ class UserQRCode extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // QR centralizado
-                          QrImageView(
-                            data: payload,
-                            version: QrVersions.auto,
-                            size: 240,
-                            gapless: true,
-                            backgroundColor: backgroundColor, // == card
-                            eyeStyle: QrEyeStyle(
-                              eyeShape: QrEyeShape.square,
-                              color: eyeColor,
-                            ),
-                            dataModuleStyle: QrDataModuleStyle(
-                              dataModuleShape: QrDataModuleShape.square,
-                              color: moduleColor,
-                            ),
+                          // QR centralizado — aguardamos o payload assinado
+                          FutureBuilder<String>(
+                            future: crypto.signMapAsJson(data),
+                            builder: (ctx, snap) {
+                              if (snap.connectionState !=
+                                  ConnectionState.done) {
+                                return const SizedBox(
+                                  height: 240,
+                                  child: Center(
+                                      child: CircularProgressIndicator()),
+                                );
+                              }
+                              if (snap.hasError || snap.data == null) {
+                                return SizedBox(
+                                  height: 240,
+                                  child:
+                                      Center(child: Text('Erro ao gerar QR')),
+                                );
+                              }
+                              final signedPayload = snap.data!;
+                              return QrImageView(
+                                data: signedPayload,
+                                version: QrVersions.auto,
+                                size: 240,
+                                gapless: true,
+                                backgroundColor: backgroundColor, // == card
+                                eyeStyle: QrEyeStyle(
+                                  eyeShape: QrEyeShape.square,
+                                  color: eyeColor,
+                                ),
+                                dataModuleStyle: QrDataModuleStyle(
+                                  dataModuleShape: QrDataModuleShape.square,
+                                  color: moduleColor,
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -152,8 +176,8 @@ class UserQRCode extends StatelessWidget {
         title: const Text('O que é este QR Code?'),
         content: const Text(
           'Este QR Code representa sua “Identidade do Usuário”: nome, CPF, e-mail e data de nascimento, '
-              'codificados em JSON para leitura rápida por apps autorizados.\n\n'
-              'Privacidade: o conteúdo não é criptografado. Compartilhe apenas com serviços confiáveis.',
+          'codificados em JSON para leitura rápida por apps autorizados.\n\n'
+          'Privacidade: o conteúdo não é criptografado. Compartilhe apenas com serviços confiáveis.',
         ),
         actions: [
           TextButton(
