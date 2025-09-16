@@ -55,7 +55,7 @@ export const MaterialSelect: React.FC<MaterialSelectProps> = ({
 
       {/* Select Trigger */}
       <div 
-        className="relative cursor-pointer"
+        className="relative cursor-pointer items-center"
         onClick={() => {
           setIsOpen(!isOpen);
           setIsFocused(!isOpen);
@@ -63,7 +63,7 @@ export const MaterialSelect: React.FC<MaterialSelectProps> = ({
         onBlur={() => setIsFocused(false)}
       >
         <div 
-          className={`w-full h-14 px-4 pt-6 pb-2 rounded-lg border-2 bg-white transition-all duration-200 flex items-end justify-between ${
+          className={`w-full h-14 px-4 pt-6 pb-2 rounded-lg border-2 bg-white transition-all duration-200 flex items-center justify-between ${
             isFocused || isOpen 
               ? 'border-[#B589FF] shadow-md' 
               : 'border-gray-300 hover:border-gray-400'
@@ -73,7 +73,7 @@ export const MaterialSelect: React.FC<MaterialSelectProps> = ({
             {selectedOption ? (
               <span className="text-base">{selectedOption.label}</span>
             ) : (
-              <span className="text-gray-400 text-base">{placeholder}</span>
+              isFocused && <span className="text-gray-400 text-base">{placeholder}</span>
             )}
           </div>
           <ChevronDown 

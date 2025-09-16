@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../models/vaccine.dart';
-import 'data/vaccines_list.dart';
 
 class VaccinationCalendar extends StatefulWidget {
   final User user;

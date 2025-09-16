@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'stellar.dart';
 
 /// Responsável por proteger acesso à seed Stellar via PIN + biometria.
@@ -11,11 +12,12 @@ class SecurityService {
   static const _lockUntilKey = 'pin_lock_until_epoch';
   static const _maxAttempts = 5;
   static const _lockMinutes = 5;
-  static const _trustedKey = 'device_trusted_v1';
+  // trusted flag is now stored in-memory; no persistent key needed
 
   final FlutterSecureStorage _storage;
   final LocalAuthentication _auth;
   final StellarKeyManager keyManager;
+  bool _trusted = false; // volatile in-memory flag
 
   SecurityService({
     FlutterSecureStorage? storage,
@@ -30,14 +32,23 @@ class SecurityService {
 
   Future<void> setPin(String pin) async {
     final hash = _hash(pin);
+    debugPrint('[SecurityService] setPin: saving pin hash');
     await _storage.write(key: _pinKey, value: hash);
   }
 
   Future<bool> authenticateWithPin(String pin) async {
-    if (await _isLocked()) return false;
+    debugPrint('[SecurityService] authenticateWithPin: attempt');
+    if (await _isLocked()) {
+      debugPrint('[SecurityService] authenticateWithPin: locked');
+      return false;
+    }
     final stored = await _storage.read(key: _pinKey);
-    if (stored == null) return false;
+    if (stored == null) {
+      debugPrint('[SecurityService] authenticateWithPin: no pin stored');
+      return false;
+    }
     final ok = stored == _hash(pin);
+    debugPrint('[SecurityService] authenticateWithPin: ok=$ok');
     if (ok) {
       await _resetAttempts();
       return true;
@@ -48,13 +59,21 @@ class SecurityService {
 
   Future<bool> authenticateBiometric(
       {String reason = 'Autenticar para acessar sua carteira'}) async {
+    debugPrint('[SecurityService] authenticateBiometric: trying');
     try {
       final can = await _auth.canCheckBiometrics;
+      debugPrint(
+          '[SecurityService] authenticateBiometric: canCheckBiometrics=$can');
       if (!can) return false;
       final available = await _auth.getAvailableBiometrics();
+      debugPrint(
+          '[SecurityService] authenticateBiometric: available=$available');
       if (available.isEmpty) return false;
-      return await _auth.authenticate(localizedReason: reason);
-    } catch (_) {
+      final ok = await _auth.authenticate(localizedReason: reason);
+      debugPrint('[SecurityService] authenticateBiometric: result=$ok');
+      return ok;
+    } catch (e) {
+      debugPrint('[SecurityService] authenticateBiometric error: $e');
       return false;
     }
   }
@@ -93,9 +112,18 @@ class SecurityService {
     await _storage.delete(key: _lockUntilKey);
   }
 
-  Future<void> markTrusted() async =>
-      _storage.write(key: _trustedKey, value: '1');
-  Future<bool> isTrusted() async =>
-      (await _storage.read(key: _trustedKey)) == '1';
-  Future<void> revokeTrust() async => _storage.delete(key: _trustedKey);
+  Future<void> markTrusted() async {
+    debugPrint('[SecurityService] markTrusted (in-memory)');
+    _trusted = true;
+  }
+
+  Future<bool> isTrusted() async {
+    debugPrint('[SecurityService] isTrusted(in-memory)=$_trusted');
+    return _trusted;
+  }
+
+  Future<void> revokeTrust() async {
+    debugPrint('[SecurityService] revokeTrust (in-memory)');
+    _trusted = false;
+  }
 }

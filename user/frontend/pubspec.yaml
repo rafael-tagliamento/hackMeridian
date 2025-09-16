@@ -29,4 +29,10 @@ flutter:
     - assets/logoroxo.png
     - assets/logoroxo2.png
     - assets/logoroxometade.png
+  # - assets/models/mobilefacenet.tflite
+  # Observação: o modelo TensorFlow Lite foi comentado porque o arquivo
+  # 'assets/models/mobilefacenet.tflite' não está presente no repositório.
+  # Para habilitar, adicione o arquivo em 'assets/models/' e descomente a
+  # linha acima.
+
 

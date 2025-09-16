@@ -2,8 +2,7 @@
 */.venv/
 .env
 
-#Python
-*.cpython*
+admin_web/node_modules
 
 # OS and IDE
 DS_Store

@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
-
-import 'theme/theme.dart';
-=======
 import 'startup.dart';
->>>>>>> 046f9f9 (só pra dar pull)
 
 import 'models/user.dart';
 import 'models/vaccine.dart';
@@ -13,15 +8,11 @@ import 'utils/user_storage.dart';
 
 // Telas
 import 'screens/tab_navigation.dart';
-<<<<<<< HEAD
-import 'screens/vaccination_calendar.dart';
-import 'screens/user_qrcode.dart' as uq;
-=======
-import 'screens/vaccination_calendar.dart'; // ⬅️ ADICIONE ESTE
+import 'theme/vaccination_calendar.dart';
 // --- Use aliases para evitar conflitos ---
 import 'screens/user_qrcode.dart' as uq; // ⬅️ MANTENHA SÓ ESTE (com alias)
->>>>>>> 046f9f9 (só pra dar pull)
 import 'screens/scan_health_center.dart' as shc;
+import 'screens/create_account.dart';
 
 void main() => runApp(const VaccinationApp());
 
@@ -32,18 +23,13 @@ class VaccinationApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-<<<<<<< HEAD
-
-      theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
-=======
->>>>>>> 046f9f9 (só pra dar pull)
       themeMode: ThemeMode.system,
       home: StartupFlow(),
     );
   }
 }
 
+// ✅ Enum unificado com os rótulos usados na navbar
 enum TabType { qr, calendario, historico, scanner }
 
 class App extends StatefulWidget {
@@ -57,6 +43,7 @@ class App extends StatefulWidget {
 class _AppState extends State<App> {
   bool isLoggedIn = false;
 
+  // ✅ Começa na aba de QR
   TabType activeTab = TabType.qr;
 
   User? user;
@@ -68,7 +55,7 @@ class _AppState extends State<App> {
       id: '1',
       name: 'COVID-19 (Pfizer)',
       date: '2024-03-15',
-      nextDose: '2025-12-20',
+      nextDose: '2024-12-20',
       batch: 'PF001234',
       administrationHash: 'ADM-A1B2C3D4',
       verificationHash: 'VRF-E5F6G7H8',
@@ -105,6 +92,7 @@ class _AppState extends State<App> {
   @override
   void initState() {
     super.initState();
+    debugPrint('[App] initState initialUser=${widget.initialUser != null}');
     if (widget.initialUser != null) {
       user = widget.initialUser;
       isLoggedIn = true;
@@ -114,16 +102,18 @@ class _AppState extends State<App> {
   Future<void> _lazyLoadUser() async {
     if (_attemptedLazyLoad) return;
     _attemptedLazyLoad = true;
+    debugPrint('[App] lazyLoadUser: tentando carregar user do storage');
     try {
       final us = await UserStorage().load();
+      debugPrint('[App] lazyLoadUser: result user=${us != null}');
       if (us != null && mounted) {
         setState(() {
           user = us;
           isLoggedIn = true;
         });
       }
-    } catch (_) {
-      /* ignore */
+    } catch (e) {
+      debugPrint('[App] lazyLoadUser error: $e');
     }
   }
 
@@ -141,11 +131,9 @@ class _AppState extends State<App> {
     String? nextDose,
     required String batch,
   }) {
-    final adm = generateAdministrationHash(
-      name: name, batch: batch,
-    );
+    final adm = generateAdministrationHash(name: name, batch: batch);
     final vrf = (user != null)
-        ? 'VRF-${generateHash('$adm-${user!.cpf}-${user!.name}')}'
+        ? generateVerificationHash(adm, cpf: user!.cpf, name: user!.name)
         : '';
 
     final v = Vaccine(
@@ -163,9 +151,61 @@ class _AppState extends State<App> {
   @override
   Widget build(BuildContext context) {
     if (!isLoggedIn || user == null) {
-      _lazyLoadUser();
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      debugPrint(
+          '[App] build: não logado, user=null, attemptedLazyLoad=$_attemptedLazyLoad');
+      if (!_attemptedLazyLoad) {
+        _lazyLoadUser();
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
+      }
+      // attemptedLazyLoad == true and still no user -> show actions instead of infinite spinner
+      return Scaffold(
+        appBar: AppBar(title: const Text('Bem-vindo')),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Nenhum usuário encontrado.'),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _attemptedLazyLoad = false;
+                    });
+                    _lazyLoadUser();
+                  },
+                  child: const Text('Tentar novamente'),
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: () async {
+                    // Abre a tela de criação de conta; quando concluída, CreateAccount chamará onCreateAccount
+                    final completer = await Navigator.of(context).push<User>(
+                      MaterialPageRoute(
+                        builder: (routeCtx) => CreateAccount(
+                          onCreateAccount: (u) {
+                            // passa o usuário de volta via pop no contexto da rota
+                            Navigator.of(routeCtx).pop(u);
+                          },
+                        ),
+                      ),
+                    );
+                    if (completer != null) {
+                      setState(() {
+                        user = completer;
+                        isLoggedIn = true;
+                      });
+                    }
+                  },
+                  child: const Text('Criar conta'),
+                ),
+              ],
+            ),
+          ),
+        ),
       );
     }
 
@@ -183,11 +223,15 @@ class _AppState extends State<App> {
         body = HistoricoPage(vaccines: vaccines);
         break;
       case TabType.scanner:
-        body = shc.ScanHealthCenter(
-          // usa o ScanHealthCenter da pasta scan_health_center
-          user: user!,
-          vaccines: vaccines,
-          onAddVaccine: addVaccine,
+        body = shc.ScanQRCode(
+          // scanner genérico que valida assinaturas Stellar
+          onDataVerified: (data) {
+            // Exemplo: aqui você poderia processar os dados aprovados
+            // atualmente apenas mostra uma snackbar
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Dados aprovados pelo scanner')),
+            );
+          },
         );
         break;
     }
@@ -225,12 +269,7 @@ class HistoricoPage extends StatelessWidget {
         return ListTile(
           leading: const Icon(Icons.history),
           title: Text(v.name),
-<<<<<<< HEAD
           subtitle: Text('Aplicada em ${v.date} • Lote ${v.batch}'),
-=======
-          subtitle:
-              Text('Aplicada em ${v.date} • Lote ${v.batch} • ${v.location}'),
->>>>>>> 046f9f9 (só pra dar pull)
           trailing: const Icon(Icons.chevron_right),
         );
       },
