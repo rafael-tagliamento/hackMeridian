@@ -25,8 +25,8 @@ export async function validateQRCodeSignature(payload: QRCodePayload): Promise<b
     
     // Validar se a publicKey é válida no formato Stellar
     if (!StrKey.isValidEd25519PublicKey(data.publicKey)) {
-      console.error('Chave pública inválida:', data.publicKey);
-      return false;
+      console.error('Chave pública inválida no formato Stellar:', data.publicKey);
+      throw new Error('Chave pública inválida no formato Stellar');
     }
 
     // Criar keypair a partir da chave pública
@@ -82,11 +82,14 @@ export async function validateQRCodeSignature(payload: QRCodePayload): Promise<b
     }
     
     console.log('❌ Nenhum formato de assinatura foi válido');
-    return false;
+    throw new Error('QR Code alterado ou com chave incompatível');
     
   } catch (error) {
     console.error('Erro ao validar assinatura do QR Code:', error);
-    return false;
+    if (error instanceof Error) {
+      throw error; // Re-throw para manter a mensagem específica
+    }
+    throw new Error('Erro na validação da assinatura digital');
   }
 }
 

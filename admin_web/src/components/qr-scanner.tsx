@@ -49,12 +49,17 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onValidatio
             // Debug completo do QR Code
             const debugResult = debugQRCode(code.data);
             
-            // Parse do JSON do QR code
-            const parsedData = JSON.parse(code.data);
+            let parsedData;
+            try {
+              // Parse do JSON do QR code
+              parsedData = JSON.parse(code.data);
+            } catch (parseError) {
+              throw new Error("QR Code fora do formato esperado. Certifique-se de escanear um QR Code válido do sistema.");
+            }
             
             // Validar estrutura do QR code
             if (!validateQRCodeStructure(parsedData)) {
-              throw new Error("Formato de QR Code inválido. Esperado: {\"data\":{\"name\",\"cpf\",\"publicKey\"},\"signature\"}");
+              throw new Error("QR Code com formato inválido. Este QR Code não foi gerado pelo sistema de vacinação.");
             }
 
             // Alterar estado para validando
@@ -62,23 +67,52 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onValidatio
             setErrorMessage('');
 
             // Validar assinatura usando Stellar SDK
-            const isSignatureValid = await validateQRCodeSignature(parsedData);
-            
-            if (isSignatureValid) {
-              // Assinatura válida - sucesso!
-              console.log('✅ QR Code válido! Redirecionando...');
-              onScanSuccess(parsedData.data);
-              setScanState('idle');
-            } else {
-              // Assinatura inválida
-              const errorMsg = "QR Code inválido: assinatura não confere com a chave pública";
+            try {
+              const isSignatureValid = await validateQRCodeSignature(parsedData);
+              
+              if (isSignatureValid) {
+                // Assinatura válida - sucesso!
+                console.log('✅ QR Code válido! Redirecionando...');
+                onScanSuccess(parsedData.data);
+                setScanState('idle');
+              }
+            } catch (validationError) {
+              // Erro na validação da assinatura
+              let errorMsg = "QR Code alterado ou com chave incompatível";
+              
+              if (validationError instanceof Error) {
+                if (validationError.message.includes("Chave pública inválida")) {
+                  errorMsg = "QR Code com chave pública inválida. Solicite um novo QR Code ao paciente.";
+                } else if (validationError.message.includes("alterado") || validationError.message.includes("incompatível")) {
+                  errorMsg = "QR Code alterado ou com chave incompatível. Este QR Code pode ter sido modificado.";
+                } else {
+                  errorMsg = "Erro na validação do QR Code. Tente novamente ou solicite um novo QR Code.";
+                }
+              }
+              
               setErrorMessage(errorMsg);
               onValidationError(errorMsg);
               setScanState('error');
             }
           } catch (error) {
             console.error("Erro ao processar QR Code:", error);
-            const errorMsg = error instanceof Error ? error.message : "Erro ao processar QR Code";
+            let errorMsg = "Erro ao processar QR Code";
+            
+            // Melhorar mensagens de erro baseadas no tipo de erro
+            if (error instanceof Error) {
+              if (error.message.includes("formato")) {
+                errorMsg = "QR Code fora do formato esperado. Verifique se está escaneando o QR Code correto.";
+              } else if (error.message.includes("estrutura") || error.message.includes("inválido")) {
+                errorMsg = "QR Code com formato inválido. Este não é um QR Code do sistema de vacinação.";
+              } else if (error.message.includes("assinatura") || error.message.includes("chave")) {
+                errorMsg = "QR Code com chave incompatível. Este QR Code pode ter sido alterado.";
+              } else if (error.message.includes("Chave pública inválida")) {
+                errorMsg = "QR Code com chave pública inválida. Solicite um novo QR Code ao paciente.";
+              } else {
+                errorMsg = error.message;
+              }
+            }
+            
             setErrorMessage(errorMsg);
             onValidationError(errorMsg);
             setScanState('error');
