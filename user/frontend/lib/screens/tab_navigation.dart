@@ -27,7 +27,7 @@ class TabNavigation extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Olá, ${user.name.split(' ').first}'),
+        title: Text('Olá, ${user.name.split(' ').first}!'),
         actions: [
           IconButton(
             onPressed: onLogout,

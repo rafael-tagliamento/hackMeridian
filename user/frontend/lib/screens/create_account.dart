@@ -11,9 +11,7 @@ import 'package:local_auth/local_auth.dart';
 import '../models/user.dart';
 import '../utils/local_doc_selfie_verifier.dart'; // << novo import
 
-/// ---------------------------------------------------------------------------
-/// TELA: Criação de conta em 2 etapas
-/// ---------------------------------------------------------------------------
+// Criação de uma conta
 class CreateAccount extends StatefulWidget {
   final void Function(User) onCreateAccount;
   final VoidCallback onBackToLogin;

@@ -28,6 +28,4 @@ flutter:
     - assets/logoroxo.png
     - assets/logoroxo2.png
     - assets/logoroxometade.png
-    - assets/models/mobilefacenet.tflite
-
 

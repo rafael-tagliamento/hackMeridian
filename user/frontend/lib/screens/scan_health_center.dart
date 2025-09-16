@@ -9,22 +9,11 @@ class ScanHealthCenter extends StatefulWidget {
   final User user;
   final List<Vaccine> vaccines;
 
-  /// Deve bater com a assinatura que você usa no main.dart:
-  /// void addVaccine({
-  ///   required String name,
-  ///   required String date,
-  ///   String? nextDose,
-  ///   required String batch,
-  ///   required String location,
-  ///   required String doctor,
-  /// })
   final void Function({
   required String name,
   required String date,
   String? nextDose,
   required String batch,
-  required String location,
-  required String doctor,
   }) onAddVaccine;
 
   const ScanHealthCenter({
@@ -61,10 +50,8 @@ class _ScanHealthCenterState extends State<ScanHealthCenter> {
     final raw = barcodes.first.rawValue;
     if (raw == null || raw.isEmpty) return;
 
-    // Marca como tratado para evitar múltiplos diálogos
-    _handled = true;
+    _handled = true; // evita múltiplos diálogos
 
-    // Tenta converter para JSON -> campos de vacina
     Map<String, dynamic>? data;
     try {
       data = jsonDecode(raw) as Map<String, dynamic>;
@@ -79,7 +66,7 @@ class _ScanHealthCenterState extends State<ScanHealthCenter> {
         title: 'QR lido (texto)',
         message: raw,
       );
-      _handled = false; // permite nova leitura
+      _handled = false;
       return;
     }
 
@@ -107,7 +94,7 @@ class _ScanHealthCenterState extends State<ScanHealthCenter> {
         message:
         'Faltam campos: ${camposFaltantes.join(', ')}.\n\nConteúdo lido:\n$raw',
       );
-      _handled = false; // libera nova leitura
+      _handled = false;
       return;
     }
 
@@ -129,8 +116,6 @@ class _ScanHealthCenterState extends State<ScanHealthCenter> {
         date: date,
         nextDose: nextDose,
         batch: batch,
-        location: location,
-        doctor: doctor,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -138,8 +123,7 @@ class _ScanHealthCenterState extends State<ScanHealthCenter> {
       );
       Navigator.of(context).maybePop(); // volta uma tela (opcional)
     } else {
-      // Permite tentar outro QR
-      _handled = false;
+      _handled = false; // pode tentar outro QR
     }
   }
 
@@ -194,13 +178,63 @@ class _ScanHealthCenterState extends State<ScanHealthCenter> {
     );
   }
 
+  /// 🔹 novo: diálogo de ajuda
+  void _showHelp() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Como funciona o escaneamento'),
+        content: const SingleChildScrollView(
+          child: Text(
+            '1) Aponte a câmera para o QR do paciente/registro.\n'
+                '2) Ao reconhecer, o app tenta ler o conteúdo como JSON.\n'
+                '3) Se o JSON tiver os campos obrigatórios, você confirma e a aplicação é adicionada.\n\n'
+                'Campos esperados no QR:\n'
+                '• name (nome da vacina)\n'
+                '• date (data da aplicação)\n'
+                '• batch (lote)\n'
+                '• location (local da aplicação)\n'
+                '• doctor (profissional)\n'
+                '• nextDose (opcional)\n\n'
+                'Exemplo de QR (JSON):\n'
+                '{\n'
+                '  "name": "COVID-19 (Pfizer)",\n'
+                '  "date": "2024-12-20",\n'
+                '  "nextDose": "2025-06-20",\n'
+                '  "batch": "PF001234",\n'
+                '  "location": "UBS Centro",\n'
+                '  "doctor": "Dra. Ana"\n'
+                '}\n\n'
+                'Dicas:\n'
+                '• Ative o flash se o ambiente estiver escuro.\n'
+                '• Aproxime ou afaste para o QR ficar nítido dentro da moldura.\n'
+                '• Se ler texto comum (não-JSON), o app mostra o texto lido.\n\n'
+                'Privacidade:\n'
+                '• O conteúdo lido é usado somente para preencher os campos e não é enviado para servidores.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Entendi'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // UI simples: câmera + moldura + controles (flash / switch camera)
+    // UI simples: câmera + moldura + controles (ajuda / flash / trocar câmera)
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Escanear QR no Posto'),
+        title: const Text('Escanear Carteira'),
         actions: [
+          IconButton(
+            onPressed: _showHelp,                 // ⬅️ botão de ajuda
+            icon: const Icon(Icons.help_outline),
+            tooltip: 'Ajuda',
+          ),
           IconButton(
             onPressed: () => _controller.toggleTorch(),
             icon: const Icon(Icons.flash_on),
@@ -247,8 +281,8 @@ class _ScanHealthCenterState extends State<ScanHealthCenter> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Text(
-                'Aponte a câmera para o QR do paciente/registro.\n'
-                    'Ao reconhecer um QR válido, vamos pedir confirmação para adicionar.',
+                'Aponte a câmera para o QR.\n'
+                    'Ao reconhecer um QR válido, será exibida a confirmação para adicionar.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white),
               ),

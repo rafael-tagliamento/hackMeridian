@@ -69,17 +69,17 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     super.dispose();
   }
 
-  // QUALQUER LOGIN ENTRA (modo permissivo)  // <<<
+  // QUALQUER LOGIN ENTRA (modo permissivo)
   void submit() {
-    final n = name.text.trim().isEmpty ? 'Usuário' : name.text.trim();          // <<<
-    final e = email.text.trim();                                                // <<<
-    final c = cpf.text.trim().isEmpty ? '00000000000' : cpf.text.trim();        // <<<
-    final b = birth.text.trim().isEmpty ? '2000-01-01' : birth.text.trim();     // <<<
+    final n = name.text.trim().isEmpty ? 'Usuário' : name.text.trim();
+    final e = email.text.trim();
+    final c = cpf.text.trim().isEmpty ? '00000000000' : cpf.text.trim();
+    final b = birth.text.trim().isEmpty ? '2000-01-01' : birth.text.trim();
 
     widget.onLogin(
       User(
         name: n,
-        email: e.isEmpty ? null : e,   // ✅ aqui estava o erro
+        email: e.isEmpty ? null : e,
         birthDate: b,
         cpf: c,
       ),
