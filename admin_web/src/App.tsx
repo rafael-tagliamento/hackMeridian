@@ -9,7 +9,7 @@ import { Label } from "./components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
 import { CheckCircle, User, LogOut, Syringe } from "lucide-react";
 import { QRCodeData } from "./utils/stellar-validation";
-import logoImage from "./assets/logoroxo.png";
+import logoImage from "./logoroxo.png";
 
 type Screen =
   | "login"
@@ -623,7 +623,7 @@ export default function App() {
           >
             <div className="flex items-center gap-2 mb-8">
               <img
-                src="./src/assets/logoroxo.png"
+                src={logoImage}
                 alt="Logo"
                 style={{ width: "32px", height: "32px" }}
               />
