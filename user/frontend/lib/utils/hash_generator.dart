@@ -14,11 +14,9 @@ String generateHash(String input) {
 String generateAdministrationHash({
   required String name,
   required String batch,
-  required String location,
-  required String doctor,
 }) {
   final ts = DateTime.now().millisecondsSinceEpoch;
-  final input = '$name-$batch-$location-$doctor-$ts';
+  final input = '$name-$batch-$ts';
   return 'ADM-${generateHash(input)}';
 }
 

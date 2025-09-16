@@ -50,7 +50,6 @@ class _AppState extends State<App> {
   bool isLoggedIn = false;
   bool showCreateAccount = false;
 
-  // ✅ Começa na aba de QR
   TabType activeTab = TabType.qr;
 
   User? user;
@@ -60,10 +59,8 @@ class _AppState extends State<App> {
       id: '1',
       name: 'COVID-19 (Pfizer)',
       date: '2024-03-15',
-      nextDose: '2024-12-20',
+      nextDose: '2025-12-20',
       batch: 'PF001234',
-      location: 'UBS Centro',
-      doctor: 'Dr. Maria Silva',
       administrationHash: 'ADM-A1B2C3D4',
       verificationHash: 'VRF-E5F6G7H8',
     ),
@@ -73,8 +70,6 @@ class _AppState extends State<App> {
       date: '2024-04-20',
       nextDose: '2024-12-10',
       batch: 'INF5678',
-      location: 'Clínica Santa Cruz',
-      doctor: 'Dr. João Santos',
       administrationHash: 'ADM-I9J0K1L2',
       verificationHash: 'VRF-M3N4O5P6',
     ),
@@ -84,8 +79,6 @@ class _AppState extends State<App> {
       date: '2024-02-10',
       nextDose: '2024-12-18',
       batch: 'HEP7890',
-      location: 'Hospital São José',
-      doctor: 'Dr. Ana Costa',
       administrationHash: 'ADM-M7N8O9P0',
       verificationHash: 'VRF-Q1R2S3T4',
     ),
@@ -95,8 +88,6 @@ class _AppState extends State<App> {
       date: '2024-01-05',
       nextDose: '2025-02-15',
       batch: 'TET1122',
-      location: 'UBS Norte',
-      doctor: 'Dr. Pedro Lima',
       administrationHash: 'ADM-U5V6W7X8',
       verificationHash: 'VRF-Y9Z0A1B2',
     ),
@@ -134,11 +125,9 @@ class _AppState extends State<App> {
     required String date,
     String? nextDose,
     required String batch,
-    required String location,
-    required String doctor,
   }) {
     final adm = generateAdministrationHash(
-      name: name, batch: batch, location: location, doctor: doctor,
+      name: name, batch: batch,
     );
     final vrf = (user != null)
         ? 'VRF-${generateHash('$adm-${user!.cpf}-${user!.name}')}'
@@ -150,8 +139,6 @@ class _AppState extends State<App> {
       date: date,
       nextDose: nextDose,
       batch: batch,
-      location: location,
-      doctor: doctor,
       administrationHash: adm,
       verificationHash: vrf,
     );
@@ -227,7 +214,7 @@ class HistoricoPage extends StatelessWidget {
         return ListTile(
           leading: const Icon(Icons.history),
           title: Text(v.name),
-          subtitle: Text('Aplicada em ${v.date} • Lote ${v.batch} • ${v.location}'),
+          subtitle: Text('Aplicada em ${v.date} • Lote ${v.batch}'),
           trailing: const Icon(Icons.chevron_right),
         );
       },
