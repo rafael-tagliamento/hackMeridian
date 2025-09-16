@@ -13,90 +13,90 @@ export interface QRCodePayload {
 }
 
 /**
- * Valida se a assinatura do QR Code é válida usando a rede Stellar
- * @param payload - Os dados do QR Code contendo data e signature
- * @returns Promise<boolean> - true se a assinatura for válida, false caso contrário
+ * Validates if the QR Code signature is valid using the Stellar network
+ * @param payload - The QR Code data containing data and signature
+ * @returns Promise<boolean> - true if signature is valid, false otherwise
  */
 export async function validateQRCodeSignature(payload: QRCodePayload): Promise<boolean> {
   try {
     const { data, signature } = payload;
     
-    console.log('Validando QR Code:', { data, signature });
+    console.log('Validating QR Code:', { data, signature });
     
-    // Validar se a publicKey é válida no formato Stellar
+    // Validate if the publicKey is valid in Stellar format
     if (!StrKey.isValidEd25519PublicKey(data.publicKey)) {
-      console.error('Chave pública inválida no formato Stellar:', data.publicKey);
-      throw new Error('Chave pública inválida no formato Stellar');
+      console.error('Invalid public key in Stellar format:', data.publicKey);
+      throw new Error('Invalid public key in Stellar format');
     }
 
-    // Criar keypair a partir da chave pública
+    // Create keypair from public key
     const keypair = Keypair.fromPublicKey(data.publicKey);
-    console.log('Keypair criado com sucesso');
+    console.log('Keypair created successfully');
     
-    // Tentar diferentes formatos de serialização dos dados
+    // Try different data serialization formats
     const possibleFormats = [
-      // Formato 1: JSON stringify simples
+      // Format 1: Simple JSON stringify
       JSON.stringify(data),
-      // Formato 2: JSON stringify com campos ordenados
+      // Format 2: JSON stringify with ordered fields
       JSON.stringify({
         name: data.name,
         cpf: data.cpf,
         publicKey: data.publicKey
       }),
-      // Formato 3: JSON stringify sem espaços
+      // Format 3: JSON stringify without spaces
       JSON.stringify(data, null, 0),
-      // Formato 4: String concatenada
+      // Format 4: Concatenated string
       `${data.name}${data.cpf}${data.publicKey}`,
-      // Formato 5: Com separadores
+      // Format 5: With separators
       `${data.name}|${data.cpf}|${data.publicKey}`,
-      // Formato 6: Só o objeto data como string
+      // Format 6: Just the data object as string
       JSON.stringify(data, Object.keys(data).sort())
     ];
     
-    console.log('Testando formatos de dados...');
+    console.log('Testing data formats...');
     
     for (let i = 0; i < possibleFormats.length; i++) {
       const dataToVerify = possibleFormats[i];
-      console.log(`Testando formato ${i + 1}:`, dataToVerify);
+      console.log(`Testing format ${i + 1}:`, dataToVerify);
       
       try {
-        // Converter a assinatura de base64 para Buffer
+        // Convert signature from base64 to Buffer
         const signatureBuffer = Buffer.from(signature, 'base64');
         console.log('Signature buffer length:', signatureBuffer.length);
         
-        // Converter dados para Buffer
+        // Convert data to Buffer
         const dataBuffer = Buffer.from(dataToVerify, 'utf8');
         
-        // Verificar a assinatura
+        // Verify signature
         const isValid = keypair.verify(dataBuffer, signatureBuffer);
-        console.log(`Formato ${i + 1} válido:`, isValid);
+        console.log(`Format ${i + 1} valid:`, isValid);
         
         if (isValid) {
-          console.log('✅ Assinatura válida encontrada com formato:', i + 1);
-          console.log('Dados usados:', dataToVerify);
+          console.log('✅ Valid signature found with format:', i + 1);
+          console.log('Data used:', dataToVerify);
           return true;
         }
       } catch (error) {
-        console.log(`Erro no formato ${i + 1}:`, error);
+        console.log(`Error in format ${i + 1}:`, error);
       }
     }
     
-    console.log('❌ Nenhum formato de assinatura foi válido');
-    throw new Error('QR Code alterado ou com chave incompatível');
+    console.log('❌ No signature format was valid');
+    throw new Error('QR Code altered or incompatible key');
     
   } catch (error) {
-    console.error('Erro ao validar assinatura do QR Code:', error);
+    console.error('Error validating QR Code signature:', error);
     if (error instanceof Error) {
-      throw error; // Re-throw para manter a mensagem específica
+      throw error; // Re-throw to maintain specific message
     }
-    throw new Error('Erro na validação da assinatura digital');
+    throw new Error('Error in digital signature validation');
   }
 }
 
 /**
- * Valida se o payload do QR Code tem a estrutura correta
- * @param parsedData - Dados parseados do QR Code
- * @returns boolean - true se a estrutura for válida
+ * Validates if the QR Code payload has the correct structure
+ * @param parsedData - Parsed QR Code data
+ * @returns boolean - true if structure is valid
  */
 export function validateQRCodeStructure(parsedData: any): parsedData is QRCodePayload {
   const isValid = (

@@ -10,31 +10,31 @@ interface VaccineItem {
 }
 
 export const mockVaccines: VaccineItem[] = [
-  // Vacinas Aplicadas
-  { name: "COVID-19 (1ª dose)", date: "15/03/2024", status: "applied" },
+  // Applied Vaccines
+  { name: "COVID-19 (1st dose)", date: "15/03/2024", status: "applied" },
   { name: "Influenza 2024", date: "10/04/2024", status: "applied" },
-  { name: "Hepatite B (1ª dose)", date: "22/02/2024", status: "applied" },
-  { name: "Tétano (1ª dose)", date: "05/01/2024", status: "applied" },
-  { name: "Pneumocócica 13", date: "18/12/2023", status: "applied" },
-  { name: "Meningocócica ACWY", date: "25/11/2023", status: "applied" },
-  { name: "HPV (1ª dose)", date: "08/10/2023", status: "applied" },
-  { name: "Varicela (Catapora)", date: "12/09/2023", status: "applied" },
+  { name: "Hepatitis B (1st dose)", date: "22/02/2024", status: "applied" },
+  { name: "Tetanus (1st dose)", date: "05/01/2024", status: "applied" },
+  { name: "Pneumococcal 13", date: "18/12/2023", status: "applied" },
+  { name: "Meningococcal ACWY", date: "25/11/2023", status: "applied" },
+  { name: "HPV (1st dose)", date: "08/10/2023", status: "applied" },
+  { name: "Varicella (Chickenpox)", date: "12/09/2023", status: "applied" },
 
-  // Vacinas Pendentes
-  { name: "COVID-19 (2ª dose)", status: "pending" },
-  { name: "Hepatite B (2ª dose)", status: "pending" },
-  { name: "Tétano (reforço)", status: "pending" },
-  { name: "HPV (2ª dose)", status: "pending" },
-  { name: "Pneumocócica 23", status: "pending" },
+  // Pending Vaccines
+  { name: "COVID-19 (2nd dose)", status: "pending" },
+  { name: "Hepatitis B (2nd dose)", status: "pending" },
+  { name: "Tetanus (booster)", status: "pending" },
+  { name: "HPV (2nd dose)", status: "pending" },
+  { name: "Pneumococcal 23", status: "pending" },
   { name: "Influenza 2025", status: "pending" },
-  { name: "Hepatite A", status: "pending" },
-  { name: "Tríplice Viral (Reforço)", status: "pending" },
+  { name: "Hepatitis A", status: "pending" },
+  { name: "MMR (Booster)", status: "pending" },
 
-  // Vacinas Atrasadas
-  { name: "Febre Amarela", status: "overdue" },
-  { name: "COVID-19 (3ª dose)", status: "overdue" },
-  { name: "dTpa (Tríplice Bacteriana)", status: "overdue" },
-  { name: "Hepatite B (3ª dose)", status: "overdue" },
+  // Overdue Vaccines
+  { name: "Yellow Fever", status: "overdue" },
+  { name: "COVID-19 (3rd dose)", status: "overdue" },
+  { name: "dTpa (Triple Bacterial)", status: "overdue" },
+  { name: "Hepatitis B (3rd dose)", status: "overdue" },
 ];
 
 export const VaccinationLists: React.FC = () => {
@@ -75,7 +75,7 @@ export const VaccinationLists: React.FC = () => {
             <p className="text-sm font-medium">{vaccine.name}</p>
             {vaccine.date && (
               <p className="text-xs text-muted-foreground">
-                Aplicada em: {vaccine.date}
+                Applied on: {vaccine.date}
               </p>
             )}
           </div>
@@ -86,12 +86,12 @@ export const VaccinationLists: React.FC = () => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {/* Vacinas Aplicadas */}
+      {/* Applied Vaccines */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-green-500" />
-            Aplicadas
+            Applied
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -102,19 +102,19 @@ export const VaccinationLists: React.FC = () => {
               ))
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhuma vacina aplicada
+                No vaccines applied
               </p>
             )}
           </ScrollArea>
         </CardContent>
       </Card>
 
-      {/* Vacinas Pendentes */}
+      {/* Pending Vaccines */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <Clock className="h-5 w-5 text-yellow-500" />
-            Pendentes
+            Pending
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -125,19 +125,19 @@ export const VaccinationLists: React.FC = () => {
               ))
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhuma vacina pendente
+                No pending vaccines
               </p>
             )}
           </ScrollArea>
         </CardContent>
       </Card>
 
-      {/* Vacinas Atrasadas */}
+      {/* Overdue Vaccines */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-red-500" />
-            Atrasadas
+            Overdue
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -148,7 +148,7 @@ export const VaccinationLists: React.FC = () => {
               ))
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhuma vacina atrasada
+                No overdue vaccines
               </p>
             )}
           </ScrollArea>

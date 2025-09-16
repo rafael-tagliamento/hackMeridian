@@ -63,16 +63,16 @@ export default function App() {
     lot: "",
   });
 
-  // Estado para dados escaneados do QR
+  // State for scanned QR data
   const [scannedData, setScannedData] = useState<QRCodeData | null>(null);
   const [scanError, setScanError] = useState<string>('');
 
   const clinics = [
-    "Clínica Bem-Estar",
-    "Centro de Saúde Vida",
-    "Hospital Central",
-    "UBS São João",
-    "Clínica Familiar",
+    "Wellness Clinic",
+    "Life Health Center",
+    "Central Hospital",
+    "São João Health Unit",
+    "Family Clinic",
   ];
 
   const vaccines = mockVaccines
@@ -103,23 +103,23 @@ export default function App() {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simula um delay de autenticação para melhor UX
+    // Simulate authentication delay for better UX
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Validação para permitir apenas o usuário "maria123"
+    // Validation to allow only the user "maria123"
     if (loginForm.login !== "maria123") {
-      showNotification("Dados não conferem. Verifique suas credenciais.", "error");
+      showNotification("Data doesn't match. Please check your credentials.", "error");
       setIsLoading(false);
       return;
     }
     
-    // Login bem-sucedido para maria123
+    // Successful login for maria123
     setUser({
       name: "Maria Silva",
       cpf: "123.456.789-00",
-      clinic: "Clínica Bem-Estar",
+      clinic: "Wellness Clinic",
     });
-    showNotification("Login realizado com sucesso! Bem-vinda, Maria.", "success");
+    showNotification("Login successful! Welcome, Maria.", "success");
     setTimeout(() => {
       setCurrentScreen("scanner");
     }, 1500);
@@ -131,29 +131,29 @@ export default function App() {
     setIsLoading(true);
     
     if (registerForm.password !== registerForm.confirmPassword) {
-      showNotification("As senhas não conferem. Verifique e tente novamente.", "error");
+      showNotification("Passwords don't match. Please check and try again.", "error");
       setIsLoading(false);
       return;
     }
     
-    // Simula processamento
+    // Simulate processing
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     setRegistrationSuccess(true);
-    showNotification("Cadastro realizado com sucesso! Aguarde aprovação.", "success");
+    showNotification("Registration successful! Please wait for approval.", "success");
     setIsLoading(false);
   };
 
   const handleVaccination = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // TODO: Implementar integração com backend para confirmar a vacina
-    // Dados que serão enviados:
-    // - scannedData (dados do paciente)
+    // TODO: Implement backend integration to confirm vaccine
+    // Data to be sent:
+    // - scannedData (patient data)
     // - vaccinationForm.vaccine
     // - vaccinationForm.lot
     
-    showNotification("Vacina confirmada com sucesso!", "success");
+    showNotification("Vaccine confirmed successfully!", "success");
     
     // Reset form and return to scanner
     setTimeout(() => {
@@ -217,17 +217,17 @@ export default function App() {
                   />
                 </div>
                 <h1 className="md-headline-small" style={{ color: 'var(--md-primary)' }}>
-                  Bem-vinda ao Sistema
+                  Welcome to the System
                 </h1>
                 <p className="md-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
-                  Portal do Aplicador de Vacinas
+                  Vaccine Administrator Portal
                 </p>
               </div>
 
               <form onSubmit={handleLogin} className="space-y-6">
                 <div className="space-y-2">
                   <label htmlFor="login" className="material-label">
-                    Nome de usuário
+                    Username
                   </label>
                   <input
                     id="login"
@@ -237,7 +237,7 @@ export default function App() {
                       setLoginForm((prev) => ({ ...prev, login: e.target.value }))
                     }
                     className="material-input w-full"
-                    placeholder="Digite seu usuário"
+                    placeholder="Enter your username"
                     required
                     disabled={isLoading}
                   />
@@ -245,7 +245,7 @@ export default function App() {
 
                 <div className="space-y-2">
                   <label htmlFor="password" className="material-label">
-                    Senha
+                    Password
                   </label>
                   <input
                     id="password"
@@ -258,7 +258,7 @@ export default function App() {
                       }))
                     }
                     className="material-input w-full"
-                    placeholder="Digite sua senha"
+                    placeholder="Enter your password"
                     required
                     disabled={isLoading}
                   />
@@ -272,12 +272,12 @@ export default function App() {
                   {isLoading ? (
                     <>
                       <div className="loading-spinner"></div>
-                      Entrando...
+                      Logging in...
                     </>
                   ) : (
                     <>
                       <User size={18} />
-                      Entrar
+                      Login
                     </>
                   )}
                 </button>
@@ -285,14 +285,14 @@ export default function App() {
 
               <div className="text-center mt-6">
                 <p className="md-body-small" style={{ color: 'var(--md-on-surface-variant)' }}>
-                  Não tem uma conta?{" "}
+                  Don't have an account?{" "}
                   <button
                     onClick={() => setCurrentScreen("register")}
                     className="font-medium hover:underline transition-all duration-200"
                     style={{ color: 'var(--md-primary)' }}
                     disabled={isLoading}
                   >
-                    Cadastre-se aqui
+                    Register here
                   </button>
                 </p>
               </div>
@@ -310,7 +310,7 @@ export default function App() {
     );
   }
 
-  // Tela de Cadastro
+  // Registration Screen
   if (currentScreen === "register") {
     if (registrationSuccess) {
       return (
@@ -323,11 +323,11 @@ export default function App() {
                 </div>
               </div>
               <h2 className="md-headline-small mb-4" style={{ color: 'var(--md-on-success-container)' }}>
-                Cadastro Realizado!
+                Registration Completed!
               </h2>
               <p className="md-body-medium mb-6" style={{ color: 'var(--md-on-success-container)' }}>
-                Sua conta foi criada com sucesso. Aguarde a aprovação do administrador 
-                para confirmar seu vínculo com a clínica selecionada.
+                Your account has been successfully created. Please wait for administrator approval 
+                to confirm your connection with the selected clinic.
               </p>
               <button
                 onClick={() => {
@@ -345,7 +345,7 @@ export default function App() {
                 className="material-button ripple w-full py-3"
               >
                 <User size={18} />
-                Voltar ao Login
+                Back to Login
               </button>
             </div>
           </div>
@@ -364,22 +364,22 @@ export default function App() {
                 </div>
               </div>
               <h1 className="md-headline-small" style={{ color: 'var(--md-primary)' }}>
-                Novo Aplicador
+                New Administrator
               </h1>
               <p className="md-body-medium" style={{ color: 'var(--md-on-surface-variant)' }}>
-                Crie sua conta para acessar o sistema
+                Create your account to access the system
               </p>
             </div>
 
             <form onSubmit={handleRegister} className="space-y-6">
               <div className="space-y-6">
                 <h3 className="md-title-medium" style={{ color: 'var(--md-primary)' }}>
-                  Dados de Acesso
+                  Access Data
                 </h3>
                 
                 <div className="space-y-2">
                   <label htmlFor="register-login" className="material-label">
-                    Nome de usuário
+                    Username
                   </label>
                   <input
                     id="register-login"
@@ -392,7 +392,7 @@ export default function App() {
                       }))
                     }
                     className="material-input w-full"
-                    placeholder="Digite um nome de usuário"
+                    placeholder="Enter a username"
                     required
                   />
                 </div>
@@ -400,7 +400,7 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label htmlFor="register-password" className="material-label">
-                      Senha
+                      Password
                     </label>
                     <input
                       id="register-password"
@@ -413,14 +413,14 @@ export default function App() {
                         }))
                       }
                       className="material-input w-full"
-                      placeholder="Crie uma senha"
+                      placeholder="Create a password"
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label htmlFor="confirm-password" className="material-label">
-                      Confirmar senha
+                      Confirm password
                     </label>
                     <input
                       id="confirm-password"
@@ -433,7 +433,7 @@ export default function App() {
                         }))
                       }
                       className="material-input w-full"
-                      placeholder="Repita a senha"
+                      placeholder="Repeat the password"
                       required
                     />
                   </div>
@@ -442,12 +442,12 @@ export default function App() {
 
               <div className="space-y-6">
                 <h3 className="md-title-medium" style={{ color: 'var(--md-primary)' }}>
-                  Informações Pessoais
+                  Personal Information
                 </h3>
                 
                 <div className="space-y-2">
                   <label htmlFor="name" className="material-label">
-                    Nome completo
+                    Full name
                   </label>
                   <input
                     id="name"
@@ -460,7 +460,7 @@ export default function App() {
                       }))
                     }
                     className="material-input w-full"
-                    placeholder="Digite seu nome completo"
+                    placeholder="Enter your full name"
                     required
                   />
                 </div>
@@ -488,7 +488,7 @@ export default function App() {
 
                   <div className="space-y-2">
                     <label className="material-label">
-                      Clínica
+                      Clinic
                     </label>
                     <select
                       value={registerForm.clinic}
@@ -501,7 +501,7 @@ export default function App() {
                       className="material-input w-full"
                       required
                     >
-                      <option value="">Selecione uma clínica</option>
+                      <option value="">Select a clinic</option>
                       {clinics.map((clinic) => (
                         <option key={clinic} value={clinic}>
                           {clinic}
@@ -522,7 +522,7 @@ export default function App() {
                     color: 'var(--md-on-surface-variant)'
                   }}
                 >
-                  Cancelar
+                  Cancel
                 </button>
                 
                 <button
@@ -533,12 +533,12 @@ export default function App() {
                   {isLoading ? (
                     <>
                       <div className="loading-spinner"></div>
-                      Cadastrando...
+                      Registering...
                     </>
                   ) : (
                     <>
                       <CheckCircle size={18} />
-                      Cadastrar
+                      Register
                     </>
                   )}
                 </button>
@@ -550,13 +550,13 @@ export default function App() {
     );
   }
 
-  // Layout com sidebar para as telas autenticadas
+  // Layout with sidebar for authenticated screens
   if (user) {
     return (
       <div className="min-h-screen flex">
-        {/* Sidebar - aparece no hover */}
+        {/* Sidebar - appears on hover */}
         <div className="group relative">
-          {/* Área de hover invisível */}
+          {/* Invisible hover area */}
           <div className="w-4 h-full absolute left-0 top-0 z-20"></div>
 
           {/* Sidebar */}
@@ -576,7 +576,7 @@ export default function App() {
                 onClick={() => setCurrentScreen("scanner")}
               >
                 <Syringe className="mr-2 h-4 w-4" />
-                Scanner QR Code
+                QR Code Scanner
               </Button>
 
               <Button
@@ -585,7 +585,7 @@ export default function App() {
                 onClick={() => setCurrentScreen("profile")}
               >
                 <User className="mr-2 h-4 w-4" />
-                Minhas Informações
+                My Information
               </Button>
             </nav>
 
@@ -596,37 +596,37 @@ export default function App() {
                 onClick={handleLogout}
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                Sair
+                Logout
               </Button>
             </div>
           </div>
 
-          {/* Indicador visual da sidebar */}
+          {/* Visual indicator of sidebar */}
           <div
             className="fixed left-0 top-1/2 transform -translate-y-1/2 w-2 h-20 rounded-r-full opacity-50 group-hover:opacity-100 transition-opacity duration-300"
             style={{ backgroundColor: "#C89DFF" }}
           ></div>
         </div>
 
-        {/* Conteúdo principal */}
+        {/* Main content */}
         <div className="flex-1 p-8 ml-4">
           {currentScreen === "dashboard" && (
             <div>
-              <h1>Olá, {user.name}!</h1>
+              <h1>Hello, {user.name}!</h1>
               <p className="text-muted-foreground">
-                Selecione uma opção no menu para começar.
+                Select an option from the menu to start.
               </p>
             </div>
           )}
 
           {currentScreen === 'profile' && (
             <div className="flex flex-col items-center justify-center min-h-[80vh]">
-              <h1 className="mb-6 text-center">Minhas Informações Cadastrais</h1>
+              <h1 className="mb-6 text-center">My Registration Information</h1>
               <Card className="max-w-md w-full">
                 <CardContent className="p-6">
                   <div className="space-y-4">
                     <div>
-                      <Label>Nome</Label>
+                      <Label>Name</Label>
                       <p>{user.name}</p>
                     </div>
                     <div>
@@ -634,7 +634,7 @@ export default function App() {
                       <p>{user.cpf}</p>
                     </div>
                     <div>
-                      <Label>Clínica Vinculada</Label>
+                      <Label>Linked Clinic</Label>
                       <p>{user.clinic}</p>
                     </div>
                   </div>
@@ -645,16 +645,16 @@ export default function App() {
 
           {currentScreen === "scanner" && (
             <div>
-              <h1 className="mb-6">Scanner de QR Code do Paciente</h1>
+              <h1 className="mb-6">Patient QR Code Scanner</h1>
               <QRScanner onScanSuccess={handleScanSuccess} onValidationError={handleScanError} />
             </div>
           )}
 
           {currentScreen === "vaccination" && (
             <div>
-              <h1 className="mb-6">Registro de Vacinação</h1>
+              <h1 className="mb-6">Vaccination Record</h1>
 
-              {/* Informações do paciente escaneado */}
+              {/* Scanned patient information */}
               {scannedData && (
                 <Card
                   className="mb-6"
@@ -663,11 +663,11 @@ export default function App() {
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <CheckCircle className="h-5 w-5" style={{ color: '#B589FF' }} />
-                      <h3>Dados do Paciente (QR Code Validado)</h3>
+                      <h3>Patient Data (QR Code Validated)</h3>
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <Label>Nome do Paciente</Label>
+                        <Label>Patient Name</Label>
                         <p>{scannedData.name}</p>
                       </div>
                       <div>
@@ -675,7 +675,7 @@ export default function App() {
                         <p>{scannedData.cpf}</p>
                       </div>
                       <div>
-                        <Label>Chave Pública</Label>
+                        <Label>Public Key</Label>
                         <p className="truncate" title={scannedData.publicKey}>{scannedData.publicKey.substring(0, 20)}...</p>
                       </div>
                     </div>
@@ -683,19 +683,19 @@ export default function App() {
                 </Card>
               )}
 
-              {/* Histórico de Vacinação */}
+              {/* Vaccination History */}
               <div className="mb-6">
-                <h2 className="mb-4">Histórico de Vacinação do Paciente</h2>
+                <h2 className="mb-4">Patient Vaccination History</h2>
                 <VaccinationLists />
               </div>
 
-              {/* Formulário de registro */}
+              {/* Registration form */}
               <Card className="max-w-lg mx-auto">
                 <CardContent className="p-6">
                   <form onSubmit={handleVaccination} className="space-y-6">
                     <MaterialSelect
-                      label="Vacina Aplicada"
-                      placeholder="Selecione a vacina"
+                      label="Applied Vaccine"
+                      placeholder="Select the vaccine"
                       value={vaccinationForm.vaccine}
                       onValueChange={(value) =>
                         setVaccinationForm((prev) => ({
@@ -711,8 +711,8 @@ export default function App() {
                     />
 
                     <MaterialSelect
-                      label="Lote da Vacina"
-                      placeholder="Selecione o lote"
+                      label="Vaccine Lot"
+                      placeholder="Select the lot"
                       value={vaccinationForm.lot}
                       onValueChange={(value) =>
                         setVaccinationForm((prev) => ({ ...prev, lot: value }))
@@ -732,7 +732,7 @@ export default function App() {
                         borderColor: "#B589FF",
                       }}
                     >
-                      Confirmar vacina
+                      Confirm Vaccine
                     </Button>
                   </form>
                 </CardContent>
