@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { SyringeIcon } from './components/syringe-icon';
 import { BlockchainIcon } from './components/blockchain-icon';
 import { QRScanner } from './components/qr-scanner';
 import { WebcamScanner } from './components/WebcamScanner'; 
@@ -174,7 +173,7 @@ export default function App() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <SyringeIcon size={48} />
+              <img src="./src/assets/logoroxo.png" alt="Logo" style={{ width: '100px', height: '100px' }} />
             </div>
             <CardTitle>Login do Aplicador</CardTitle>
           </CardHeader>
@@ -381,8 +380,8 @@ export default function App() {
             style={{ backgroundColor: '#C89DFF' }}
           >
             <div className="flex items-center gap-2 mb-8">
-              <SyringeIcon size={32} />
-              <h1>VaxChain</h1>
+              <img src="./src/assets/logoroxo.png" alt="Logo" style={{ width: '32px', height: '32px' }} />
+              <h1>ImmuneChain</h1>
             </div>
             
             <nav className="space-y-2">
@@ -436,9 +435,9 @@ export default function App() {
           )}
 
           {currentScreen === 'profile' && (
-            <div>
-              <h1 className="mb-6">Minhas Informações Cadastrais</h1>
-              <Card className="max-w-md">
+            <div className="flex flex-col items-center justify-center min-h-[80vh]">
+              <h1 className="mb-6 text-center">Minhas Informações Cadastrais</h1>
+              <Card className="max-w-md w-full">
                 <CardContent className="p-6">
                   <div className="space-y-4">
                     <div>
