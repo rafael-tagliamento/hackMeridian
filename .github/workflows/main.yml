@@ -1,63 +1,90 @@
-# Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
+name: Deploy Vite and Flutter to Pages
 
 on:
-  # Runs on pushes targeting the default branch
+  # Roda em pushes para a branch principal
   push:
-    branches: ['main']
+    branches: ["main"]
 
-  # Allows you to run this workflow manually from the Actions tab
+  # Permite rodar manualmente pela aba Actions
   workflow_dispatch:
 
-# Sets the GITHUB_TOKEN permissions to allow deployment to GitHub Pages
+# Define as permissões do GITHUB_TOKEN
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow one concurrent deployment
+# Permite apenas um deploy concorrente
 concurrency:
-  group: 'pages'
+  group: "pages"
   cancel-in-progress: true
 
 jobs:
-  # Single deploy job since we're just deploying
   deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4 # Alterado para v4, a mais recente na época da resposta
-      
-      - name: Set up Node
+      # ===============================================
+      # PASSO 1: PREPARAÇÃO DO AMBIENTE
+      # ===============================================
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js (para o Vite)
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
-          cache: 'npm'
-          # Adicionado para especificar onde o package-lock.json está
-          cache-dependency-path: admin_web/package-lock.json 
+          cache: "npm"
+          cache-dependency-path: admin_web/package-lock.json
 
-      - name: Install dependencies
-        # Adicionado para rodar o comando dentro da pasta correta
-        working-directory: ./admin_web 
-        run: npm ci
-      
-      - name: Build
-        # Adicionado para rodar o comando dentro da pasta correta
-        working-directory: ./admin_web 
-        run: npm run build
-      
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3 # Alterado para v3, a mais recente na época da resposta
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
         with:
-          # Corrigido o caminho para a pasta de build
-          path: './admin_web/build' 
-      
-      - name: Deploy to GitHub Pages
+          channel: "stable"
+
+      # ===============================================
+      # PASSO 2: BUILD DOS PROJETOS
+      # ===============================================
+      - name: Instalar dependências e Build do Vite
+        working-directory: ./admin_web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Instalar dependências e Build do Flutter
+        working-directory: ./user/frontend
+        run: |
+          flutter pub get
+          flutter build web --base-href /hackmeridian/app/
+
+      # ===============================================
+      # PASSO 3: COMBINAR OS ARQUIVOS PARA DEPLOY
+      # ===============================================
+      - name: Estruturar arquivos para o Pages
+        run: |
+          # 1. Cria uma pasta raiz para o deploy
+          mkdir ./_site
+
+          # 2. Move o build do Vite para uma subpasta (ex: /admin)
+          mv admin_web/build ./_site/admin
+
+          # 3. Move o build do Flutter para outra subpasta (ex: /app)
+          mv user/frontend/build/web ./_site/app
+
+      # ===============================================
+      # PASSO 4: DEPLOY NO GITHUB PAGES
+      # ===============================================
+      - name: Configurar Pages
+        uses: actions/configure-pages@v5
+
+      - name: Fazer upload do artefato para o Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Faz o upload da pasta _site que contém os dois apps
+          path: "./_site"
+
+      - name: Deploy no GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
