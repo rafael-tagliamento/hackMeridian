@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from './components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './components/ui/dialog';
 import { CalendarIcon, Clock, CheckCircle, User, LogOut, Syringe, Link as LinkIcon } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeData } from './utils/stellar-validation';
 
 
 type Screen = 'login' | 'register' | 'dashboard' | 'profile' | 'scanner' | 'vaccination' | 'success';
@@ -59,10 +60,8 @@ export default function App() {
   });
 
   // Estado para dados escaneados do QR
-  const [scannedData, setScannedData] = useState<{
-    patientName: string;
-    date: Date;
-  } | null>(null);
+  const [scannedData, setScannedData] = useState<QRCodeData | null>(null);
+  const [scanError, setScanError] = useState<string>('');
 
   const [datePickerOpen, setDatePickerOpen] = useState(false);
 
@@ -124,16 +123,23 @@ export default function App() {
     setShowQRModal(true);
   };
 
-  const handleScanSuccess = (data: { patientName: string; date: Date }) => {
+  const handleScanSuccess = (data: QRCodeData) => {
     setScannedData(data);
+    setScanError('');
     setVaccinationForm(prev => ({
       ...prev,
-      patientName: data.patientName,
-      date: data.date,
+      patientName: data.name,
+      date: new Date(), // Nova vacinação será com data atual
       vaccine: '',
       lot: ''
     }));
+    // Redireciona diretamente para vaccination-lists
     setCurrentScreen('vaccination');
+  };
+
+  const handleScanError = (error: string) => {
+    setScanError(error);
+    setScannedData(null);
   };
 
   const handleLogout = () => {
@@ -141,6 +147,7 @@ export default function App() {
     setCurrentScreen('login');
     setLoginForm({ login: '', password: '' });
     setScannedData(null);
+    setScanError('');
     setVaccinationForm({
       date: new Date(),
       patientName: '',
@@ -327,7 +334,7 @@ export default function App() {
                   <Label htmlFor="clinic">Selecione a clínica onde trabalha</Label>
                   <Select
                     value={registerForm.clinic}
-                    onValueChange={(value) => setRegisterForm(prev => ({ ...prev, clinic: value }))}
+                    onValueChange={(value: string) => setRegisterForm(prev => ({ ...prev, clinic: value }))}
                     required
                   >
                     <SelectTrigger>
@@ -461,7 +468,14 @@ export default function App() {
           {currentScreen === 'scanner' && (
             <div>
               <h1 className="mb-6">Scanner de QR Code do Paciente</h1>
-              <QRScanner onScanSuccess={handleScanSuccess} />
+              {scanError && (
+                <Card className="mb-4" style={{ backgroundColor: '#FEE2E2', borderColor: '#EF4444' }}>
+                  <CardContent className="p-4">
+                    <p className="text-red-600">{scanError}</p>
+                  </CardContent>
+                </Card>
+              )}
+              <QRScanner onScanSuccess={handleScanSuccess} onValidationError={handleScanError} />
             </div>
           )}
 
@@ -475,16 +489,20 @@ export default function App() {
                   <CardContent className="p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <CheckCircle className="h-5 w-5" style={{ color: '#B589FF' }} />
-                      <h3>Dados do Paciente (QR Code Escaneado)</h3>
+                      <h3>Dados do Paciente (QR Code Validado)</h3>
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <Label>Nome do Paciente</Label>
-                        <p>{scannedData.patientName}</p>
+                        <p>{scannedData.name}</p>
                       </div>
                       <div>
-                        <Label>Data de Aplicação</Label>
-                        <p>{scannedData.date.toLocaleDateString('pt-BR')}</p>
+                        <Label>CPF</Label>
+                        <p>{scannedData.cpf}</p>
+                      </div>
+                      <div>
+                        <Label>Chave Pública</Label>
+                        <p className="truncate" title={scannedData.publicKey}>{scannedData.publicKey.substring(0, 20)}...</p>
                       </div>
                     </div>
                   </CardContent>
@@ -550,6 +568,7 @@ export default function App() {
                     setShowQRModal(false);
                     setCurrentScreen('scanner');
                     setScannedData(null);
+                    setScanError('');
                     setVaccinationForm({
                       date: new Date(),
                       patientName: '',

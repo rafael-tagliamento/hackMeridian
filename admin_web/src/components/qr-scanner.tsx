@@ -4,20 +4,23 @@ import jsQR from 'jsqr';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { ScanLine, QrCode } from 'lucide-react';
+import { validateQRCodeSignature, validateQRCodeStructure, QRCodeData, debugQRCode } from '../utils/stellar-validation';
 
 interface QRScannerProps {
-  onScanSuccess: (data: { patientName: string; date: Date }) => void;
+  onScanSuccess: (data: QRCodeData) => void;
+  onValidationError: (message: string) => void;
 }
 
 // Um tipo para controlar os diferentes estados do nosso componente
-type ScanState = 'idle' | 'scanning' | 'error';
+type ScanState = 'idle' | 'scanning' | 'validating' | 'error';
 
-export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess }) => {
+export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess, onValidationError }) => {
   const [scanState, setScanState] = useState<ScanState>('idle');
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const webcamRef = useRef<Webcam>(null);
-  const animationFrameId = useRef<number>();
+  const animationFrameId = useRef<number | undefined>(undefined);
 
-  // Lógica de captura e decodificação do QR Code (a mesma que fizemos antes)
+  // Lógica de captura e decodificação do QR Code com validação Stellar
   const capture = useCallback(() => {
     if (webcamRef.current) {
       const imageSrc = webcamRef.current.getScreenshot();
@@ -32,7 +35,7 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess }) => {
 
       const image = new Image();
       image.src = imageSrc;
-      image.onload = () => {
+      image.onload = async () => {
         canvas.width = image.width;
         canvas.height = image.height;
         ctx.drawImage(image, 0, 0, image.width, image.height);
@@ -41,20 +44,43 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess }) => {
 
         if (code) {
           try {
-            // Assumimos que o QR code contém um JSON
+            console.log('QR Code detectado!');
+            
+            // Debug completo do QR Code
+            const debugResult = debugQRCode(code.data);
+            
+            // Parse do JSON do QR code
             const parsedData = JSON.parse(code.data);
-            if (parsedData.patientName && parsedData.date) {
-               // Sucesso! Chamamos a função e paramos o scan.
-               onScanSuccess({
-                 ...parsedData,
-                 date: new Date(parsedData.date)
-               });
-               setScanState('idle'); // Retorna ao estado inicial
+            
+            // Validar estrutura do QR code
+            if (!validateQRCodeStructure(parsedData)) {
+              throw new Error("Formato de QR Code inválido. Esperado: {\"data\":{\"name\",\"cpf\",\"publicKey\"},\"signature\"}");
+            }
+
+            // Alterar estado para validando
+            setScanState('validating');
+            setErrorMessage('');
+
+            // Validar assinatura usando Stellar SDK
+            const isSignatureValid = await validateQRCodeSignature(parsedData);
+            
+            if (isSignatureValid) {
+              // Assinatura válida - sucesso!
+              console.log('✅ QR Code válido! Redirecionando...');
+              onScanSuccess(parsedData.data);
+              setScanState('idle');
             } else {
-              throw new Error("Formato de dados do QR Code inválido.");
+              // Assinatura inválida
+              const errorMsg = "QR Code inválido: assinatura não confere com a chave pública";
+              setErrorMessage(errorMsg);
+              onValidationError(errorMsg);
+              setScanState('error');
             }
           } catch (error) {
             console.error("Erro ao processar QR Code:", error);
+            const errorMsg = error instanceof Error ? error.message : "Erro ao processar QR Code";
+            setErrorMessage(errorMsg);
+            onValidationError(errorMsg);
             setScanState('error');
           }
         } else {
@@ -63,7 +89,7 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess }) => {
         }
       };
     }
-  }, [onScanSuccess]);
+  }, [onScanSuccess, onValidationError]);
 
   // useEffect para controlar o início e o fim do loop de escaneamento
   useEffect(() => {
@@ -86,6 +112,7 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess }) => {
   }, [scanState, capture]);
   
   const handleStartScan = () => {
+    setErrorMessage(''); // Limpa mensagem de erro anterior
     setScanState('scanning');
   };
 
@@ -106,14 +133,22 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess }) => {
                 <div className="space-y-4 p-6">
                   <QrCode className="h-16 w-16 mx-auto" style={{ color: '#C89DFF' }} />
                   <p className="text-sm text-muted-foreground">
-                    Clique no botão para ativar a câmera e escanear
+                    Clique no botão para ativar a câmera e escanear um QR Code válido
                   </p>
                 </div>
               )}
               {scanState === 'error' && (
                 <div className="space-y-4 p-6">
                    <p className="text-sm text-red-500">
-                    Não foi possível ler o QR Code. Tente novamente.
+                    {errorMessage || "Não foi possível ler o QR Code. Tente novamente."}
+                  </p>
+                </div>
+              )}
+              {scanState === 'validating' && (
+                <div className="space-y-4 p-6">
+                  <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-purple-600 mx-auto"></div>
+                  <p className="text-sm text-muted-foreground">
+                    Validando assinatura...
                   </p>
                 </div>
               )}
@@ -137,11 +172,14 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScanSuccess }) => {
 
             <Button
               onClick={handleStartScan}
-              disabled={scanState === 'scanning'}
+              disabled={scanState === 'scanning' || scanState === 'validating'}
               className="w-full"
               style={{ backgroundColor: '#B589FF', borderColor: '#B589FF' }}
             >
-              {scanState === 'scanning' ? 'Escaneando...' : 'Iniciar Escaneamento'}
+              {scanState === 'scanning' ? 'Escaneando...' : 
+               scanState === 'validating' ? 'Validando...' : 
+               scanState === 'error' ? 'Tentar Novamente' :
+               'Iniciar Escaneamento'}
             </Button>
           </div>
         </CardContent>
