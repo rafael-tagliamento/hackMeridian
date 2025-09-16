@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { BlockchainIcon } from './components/blockchain-icon';
 import { QRScanner } from './components/qr-scanner';
 import { WebcamScanner } from './components/WebcamScanner'; 
-import { VaccinationLists } from './components/vaccination-lists';
+import { VaccinationLists, mockVaccines } from './components/vaccination-lists';
 import { MaterialSelect } from './components/material-select';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
@@ -370,24 +370,24 @@ export default function App() {
                   <Label htmlFor="clinic">
                     Selecione a clínica onde trabalha
                   </Label>
-                  <Select
+                    <Select
                     value={registerForm.clinic}
-                    onValueChange={(value) =>
+                    onValueChange={(value: string) =>
                       setRegisterForm((prev) => ({ ...prev, clinic: value }))
                     }
                     required
-                  >
+                    >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione uma clínica" />
                     </SelectTrigger>
                     <SelectContent>
-                      {clinics.map((clinic) => (
-                        <SelectItem key={clinic} value={clinic}>
-                          {clinic}
-                        </SelectItem>
+                      {clinics.map((clinic: string) => (
+                      <SelectItem key={clinic} value={clinic}>
+                        {clinic}
+                      </SelectItem>
                       ))}
                     </SelectContent>
-                  </Select>
+                    </Select>
                 </div>
               </div>
 
