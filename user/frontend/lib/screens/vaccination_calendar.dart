@@ -105,7 +105,6 @@ class _VaccinationCalendarState extends State<VaccinationCalendar> {
     final upcoming = _upcomingWithinMonths(12); // próximos 12 meses
     final overdue  = _overdue();
 
-    // IMPORTANTE: usar SingleChildScrollView + Column
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(

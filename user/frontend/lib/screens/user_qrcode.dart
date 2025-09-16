@@ -13,27 +13,26 @@ class UserQRCode extends StatelessWidget {
   static const Color _preto      = Colors.black;
   static const Color _branco     = Color(0xfff9f1f9);
 
-  // Cores do QR / Card (card == fundo do QR)
-  final Color backgroundColor; // fundo do QR e do Card
-  final Color moduleColor;     // “quadradinhos” do QR
-  final Color eyeColor;        // “olhos” do QR
+  final Color backgroundColor;
+  final Color moduleColor;
+  final Color eyeColor;
 
   // Logo (fora do card, mais pra cima)
   final String logoAsset;
   final double logoWidth;
-  final double logoTopPadding; // espaço do topo da página até o logo
+  final double logoTopPadding;
 
   // Espaçamentos
-  final double titleGap;       // espaço entre título/ajuda e o card
-  final double logoTitleGap;   // espaço entre logo e título
+  final double titleGap;
+  final double logoTitleGap;
 
   const UserQRCode({
     super.key,
     required this.user,
-    // Defaults usando sua paleta
-    this.backgroundColor = _roxoEscuro,        // melhor legibilidade do QR
-    this.moduleColor     = _branco,    // quadradinhos
-    this.eyeColor        = _branco,     // olhos
+
+    this.backgroundColor = _roxoEscuro,
+    this.moduleColor     = _branco,
+    this.eyeColor        = _branco,
     this.logoAsset       = 'assets/logoroxo2.png',
     this.logoWidth       = 120,
     this.logoTopPadding  = 1,
@@ -80,7 +79,6 @@ class UserQRCode extends StatelessWidget {
 
                   SizedBox(height: logoTitleGap),
 
-                  // TÍTULO + AJUDA — fora do card e centralizados
                   Center(
                     child: Wrap(
                       crossAxisAlignment: WrapCrossAlignment.center,
