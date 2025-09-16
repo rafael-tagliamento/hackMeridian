@@ -9,7 +9,7 @@ import { Label } from "./components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
 import { CheckCircle, User, LogOut, Syringe } from "lucide-react";
 import { QRCodeData } from "./utils/stellar-validation";
-import logoImage from "./logoroxo.png";
+import logoImage from "/logoroxo.png";
 
 type Screen =
   | "login"
