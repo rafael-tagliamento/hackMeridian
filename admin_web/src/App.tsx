@@ -9,7 +9,7 @@ import { Label } from "./components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/card";
 import { CheckCircle, User, LogOut, Syringe } from "lucide-react";
 import { QRCodeData } from "./utils/stellar-validation";
-import logoImage from "./assets/logoroxo.png";
+// Logo image is now served from public folder
 
 type Screen =
   | "login"
@@ -229,7 +229,7 @@ export default function App() {
               <div className="text-center mb-8">
                 <div className="flex justify-center mb-6">
                   <img
-                    src="./src/assets/logoroxo.png"
+                    src="/hackMeridian/logoroxo.png"
                     alt="Logo"
                     className="logo-animation"
                     style={{ width: "80px", height: "80px" }}
@@ -623,7 +623,7 @@ export default function App() {
           >
             <div className="flex items-center gap-2 mb-8">
               <img
-                src="./src/assets/logoroxo.png"
+                src="/hackMeridian/logoroxo.png"
                 alt="Logo"
                 style={{ width: "32px", height: "32px" }}
               />
