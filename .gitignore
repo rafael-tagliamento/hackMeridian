@@ -6,6 +6,8 @@
 DS_Store
 .vscode
 
+admin_web/node_modules
+
 # Rust's output directory
 target
 
