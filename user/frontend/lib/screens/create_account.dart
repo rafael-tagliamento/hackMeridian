@@ -350,15 +350,18 @@ class _CreateAccountState extends State<CreateAccount> {
           ),
           const SizedBox(height: 16),
           // PIN com 6 quadradinhos
-          SizedBox(height: 72, child: Center(child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: PinInputBoxes(
-              length: 6,
-              controller: pin,
-              obscure: true,
-              onChanged: (s) {},
-            ),
-          ))),
+          SizedBox(
+              height: 72,
+              child: Center(
+                  child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: PinInputBoxes(
+                  length: 6,
+                  controller: pin,
+                  obscure: true,
+                  onChanged: (s) {},
+                ),
+              ))),
         ],
       ),
     );
